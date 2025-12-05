@@ -154,8 +154,30 @@ def assess():
 def languages():
     return jsonify([
         {"code": "en-US", "name": "English (US)"},
+        {"code": "en-CA", "name": "English (Canada)"},
+        {"code": "es-ES", "name": "Spanish (Spain)"},
         {"code": "es-MX", "name": "Spanish (Mexico)"},
-        {"code": "fr-FR", "name": "French"}
+        {"code": "es-AR", "name": "Spanish (Argentina)"},
+        {"code": "es-CO", "name": "Spanish (Colombia)"},
+        {"code": "es-CL", "name": "Spanish (Chile)"},
+        {"code": "es-PE", "name": "Spanish (Peru)"},
+        {"code": "es-VE", "name": "Spanish (Venezuela)"},
+        {"code": "es-EC", "name": "Spanish (Ecuador)"},
+        {"code": "es-GT", "name": "Spanish (Guatemala)"},
+        {"code": "es-CU", "name": "Spanish (Cuba)"},
+        {"code": "es-BO", "name": "Spanish (Bolivia)"},
+        {"code": "es-DO", "name": "Spanish (Dominican Republic)"},
+        {"code": "es-HN", "name": "Spanish (Honduras)"},
+        {"code": "es-PY", "name": "Spanish (Paraguay)"},
+        {"code": "es-SV", "name": "Spanish (El Salvador)"},
+        {"code": "es-NI", "name": "Spanish (Nicaragua)"},
+        {"code": "es-CR", "name": "Spanish (Costa Rica)"},
+        {"code": "es-PA", "name": "Spanish (Panama)"},
+        {"code": "es-UY", "name": "Spanish (Uruguay)"},
+        {"code": "es-PR", "name": "Spanish (Puerto Rico)"},
+        {"code": "es-US", "name": "Spanish (US)"},
+        {"code": "fr-FR", "name": "French (France)"},
+        {"code": "fr-CA", "name": "French (Canada)"}
     ])
 
 if __name__ == '__main__':
