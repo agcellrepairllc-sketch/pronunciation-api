@@ -77,7 +77,7 @@ def assess_pronunciation(audio_data, reference_text, language='en-US'):
     
     headers = {
         "Ocp-Apim-Subscription-Key": azure_key,
-        "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",,
+        "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
         "Pronunciation-Assessment": pron_config_b64,
         "Accept": "application/json"
     }
