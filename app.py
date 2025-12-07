@@ -9,7 +9,8 @@ import os
 import requests
 import base64
 import json
-
+import subprocess
+import tempfile
 app = Flask(__name__)
 CORS(app)
 
@@ -20,10 +21,40 @@ def get_azure_region():
     return os.environ.get('AZURE_SPEECH_REGION', 'canadaeast')
 
 def download_audio(audio_url):
+    """Download audio and convert to WAV format for best Azure compatibility"""
     try:
         response = requests.get(audio_url, timeout=30)
         response.raise_for_status()
-        return response.content
+        audio_data = response.content
+        
+        # Create temp files
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as mp3_file:
+            mp3_file.write(audio_data)
+            mp3_path = mp3_file.name
+        
+        wav_path = mp3_path.replace('.mp3', '.wav')
+        
+        # Convert to WAV (16kHz, mono, 16-bit PCM) using ffmpeg
+        try:
+            subprocess.run([
+                'ffmpeg', '-y', '-i', mp3_path,
+                '-ar', '16000',
+                '-ac', '1',
+                '-sample_fmt', 's16',
+                wav_path
+            ], capture_output=True, check=True)
+            
+            with open(wav_path, 'rb') as f:
+                wav_data = f.read()
+            
+            os.unlink(mp3_path)
+            os.unlink(wav_path)
+            
+            return wav_data
+        except subprocess.CalledProcessError:
+            os.unlink(mp3_path)
+            return audio_data
+            
     except:
         return None
 
@@ -46,7 +77,7 @@ def assess_pronunciation(audio_data, reference_text, language='en-US'):
     
     headers = {
         "Ocp-Apim-Subscription-Key": azure_key,
-        "Content-Type": "audio/mpeg",
+        "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",,
         "Pronunciation-Assessment": pron_config_b64,
         "Accept": "application/json"
     }
