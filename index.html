@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- BASE:START (managed by Coding Agent — do not edit) -->
+<base href="/pronunciation-api/">
+<!-- BASE:END -->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
+
+<!-- SEO Meta Tags -->
+<title>LTA — Pronunciation Coach</title>
+<meta property="og:title" content="LTA — Pronunciation Coach" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="LTA — Pronunciation Coach" />
+<!-- End SEO Meta Tags -->
+<script data-lp-token-hydrate>
+(function(){try{
+  var slug="lp-mq2u9ewn-c6i18";
+  var SK='lp_access_'+slug;
+  var map={access_token:'lp_pw_',allowlist_access_token:'lp_al_',pin_access_token:'lp_pin_',paywall_access_token:'lp_paid_'};
+  var u=new URL(location.href);var found=null;var changed=false;
+  Object.keys(map).forEach(function(p){var v=u.searchParams.get(p);if(v){found=v;try{localStorage.setItem(map[p]+slug,v);}catch(e){}u.searchParams.delete(p);changed=true;}});
+  if(found){try{sessionStorage.setItem(SK,found);}catch(e){}}
+  else{try{if(!sessionStorage.getItem(SK)){var t=localStorage.getItem('lp_pw_'+slug)||localStorage.getItem('lp_al_'+slug)||localStorage.getItem('lp_pin_'+slug)||localStorage.getItem('lp_paid_'+slug);if(t)sessionStorage.setItem(SK,t);}}catch(e){}}
+  if(changed){try{history.replaceState(null,'',u.toString());}catch(e){}}
+  function getTok(){try{return sessionStorage.getItem(SK)||localStorage.getItem('lp_pw_'+slug)||localStorage.getItem('lp_al_'+slug)||localStorage.getItem('lp_pin_'+slug)||localStorage.getItem('lp_paid_'+slug);}catch(e){return null;}}
+  function needsToken(url,method){if(!url)return false;var s=String(url);var m=(method||'GET').toUpperCase();var isSheetWrite=(m==='POST'||m==='PATCH'||m==='PUT'||m==='DELETE')&&/\/sheet-rows(\/|$|\?)/.test(s);var isSheetRead=/\/sheet-data(\/|$|\?)/.test(s);var isLlm=/\/api\/landing-pages\/public\/[^/]+\/(llm|llm-config)(\/|$|\?)/.test(s);return isSheetWrite||isSheetRead||isLlm;}
+  if(window.fetch){var _f=window.fetch;window.fetch=function(input,init){try{var url=typeof input==='string'?input:(input&&input.url)||'';var method=(init&&init.method)||(input&&input.method)||'GET';if(needsToken(url,method)){var tok=getTok();if(tok){init=init||{};var h=new Headers(init.headers||(typeof input!=='string'?input.headers:undefined)||{});if(!h.has('X-Landing-Page-Token'))h.set('X-Landing-Page-Token',tok);init.headers=h;}}}catch(e){}return _f.call(this,input,init);};}
+  if(window.XMLHttpRequest){var _o=XMLHttpRequest.prototype.open;var _s=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.open=function(m,u){this.__lpM=m;this.__lpU=u;return _o.apply(this,arguments);};XMLHttpRequest.prototype.send=function(){try{if(needsToken(this.__lpU,this.__lpM)){var tok=getTok();if(tok)this.setRequestHeader('X-Landing-Page-Token',tok);}}catch(e){}return _s.apply(this,arguments);};}
+}catch(e){}})();
+</script>
+
+<script data-field-replace>
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var fields={};
+  var paramMap={
+    'first_name':'firstName','last_name':'lastName','full_name':'fullName',
+    'email':'email','phone':'phone','company':'company',
+    'city':'city','state':'state','country':'country'
+  };
+  var skipTags={'SCRIPT':1,'STYLE':1,'NOSCRIPT':1,'TEXTAREA':1,'CODE':1,'PRE':1};
+  var hasUrlFields=false;
+  for(var p in paramMap){
+    var v=params.get(p);
+    if(v){fields[paramMap[p]]=v;hasUrlFields=true;}
+  }
+  var contactId=params.get('contact_id');
+  function esc(s){
+    if(!s)return s;
+    var d=document.createElement('div');
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
+  }
+  function doReplace(data){
+    var r={};
+    r['{{full_name}}']=esc(((data.firstName||'')+' '+(data.lastName||'')).trim()||((data.fullName||data.name)||''));
+    r['{{first_name}}']=esc(data.firstName||(data.name?data.name.split(' ')[0]:'')||'');
+    r['{{last_name}}']=esc(data.lastName||(data.name&&data.name.indexOf(' ')>-1?data.name.substring(data.name.indexOf(' ')+1):'')||'');
+    r['{{email}}']=esc(data.email||'');
+    r['{{phone}}']=esc(data.phone||'');
+    r['{{company}}']=esc(data.company||'');
+    r['{{city}}']=esc(data.city||'');
+    r['{{state}}']=esc(data.state||'');
+    r['{{country}}']=esc(data.country||'');
+    r['{{date}}']=new Date().toLocaleDateString();
+    r['{{time}}']=new Date().toLocaleTimeString();
+    r['{{location}}']=[data.city,data.state,data.country].filter(Boolean).join(', ');
+    r['{{tracking_id}}']=esc(data.trackingId||'');
+    r['{{lastClickedProduct}}']=esc(data.lastClickedProduct||'');
+    r['{{lastProductClickDate}}']=esc(data.lastProductClickDate||'');
+    r['{{lastClickedProductPrice}}']=esc(data.lastClickedProductPrice||'');
+    r['{{lastClickedProductURL}}']=esc(data.lastClickedProductURL||'');
+    r['{{productsClickedCount}}']=esc(data.productsClickedCount||'0');
+    r['{{ip_address}}']=esc(data.ipAddress||'');
+    r['{{ip}}']=esc(data.ipAddress||'');
+    if(data.customFields){
+      for(var k in data.customFields){
+        r['{{'+k+'}}']=esc(String(data.customFields[k]||''));
+      }
+    }
+    params.forEach(function(v,k){
+      if(!paramMap[k]&&k!=='contact_id'&&k!=='page_id'&&k.indexOf('utm_')!==0){
+        r['{{'+k+'}}']=esc(v);
+      }
+    });
+    var hasValues=false;
+    for(var key in r){if(r[key]){hasValues=true;break;}}
+    if(!hasValues)return;
+    var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{
+      acceptNode:function(n){
+        var p=n.parentNode;
+        if(p&&skipTags[p.nodeName])return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var node;
+    while(node=walker.nextNode()){
+      var txt=node.nodeValue;
+      if(txt&&txt.indexOf('{{')>-1){
+        var changed=txt;
+        for(var ph in r){
+          if(r[ph]&&changed.indexOf(ph)>-1){
+            changed=changed.split(ph).join(r[ph]);
+          }
+        }
+        if(changed!==txt)node.nodeValue=changed;
+      }
+    }
+    var attrs=['value','placeholder','content','alt','title'];
+    attrs.forEach(function(attr){
+      var els=document.querySelectorAll('['+attr+'*="{{"]');
+      for(var i=0;i<els.length;i++){
+        var tag=els[i].tagName;
+        if(skipTags[tag])continue;
+        var val=els[i].getAttribute(attr);
+        if(val){
+          var nv=val;
+          for(var ph in r){
+            if(r[ph]&&nv.indexOf(ph)>-1){
+              nv=nv.split(ph).join(r[ph]);
+            }
+          }
+          if(nv!==val)els[i].setAttribute(attr,nv);
+        }
+      }
+    });
+  }
+  function run(){
+    if(contactId){
+      var xhr=new XMLHttpRequest();
+      xhr.open('GET','https://app.paygogpt.com/api/landing/context/'+encodeURIComponent(contactId)+'?page_id=4600');
+      xhr.onload=function(){
+        if(xhr.status===200){
+          try{
+            var resp=JSON.parse(xhr.responseText);
+            if(resp.success&&resp.contact){
+              var merged=resp.contact;
+              for(var k in fields){merged[k]=fields[k];}
+              doReplace(merged);
+              return;
+            }
+          }catch(e){}
+        }
+        if(hasUrlFields)doReplace(fields);
+      };
+      xhr.onerror=function(){if(hasUrlFields)doReplace(fields);};
+      xhr.send();
+    }else if(hasUrlFields){
+      doReplace(fields);
+    }
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',run);}
+  else{run();}
+})();
+</script>
+<script data-payment>
+(function(){
+  var slug='7aSWqy5eB';
+  var apiBase='https://app.paygogpt.com';
+  var successSubtext='';var successBtnLabel='Continue';var successBtnColor='#16a34a';var successRedirect='';
+  function findEmail(){
+    var ids=['email','emailAddress','buyer-email','buyerEmail','user-email','userEmail','checkout-email','customer-email','contact-email'];
+    for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el&&el.value&&el.value.includes('@'))return el.value.trim();}
+    var inputs=document.querySelectorAll('input[type="email"],input[name*="email"],input[placeholder*="email"],input[placeholder*="Email"]');
+    for(var j=0;j<inputs.length;j++){if(inputs[j].value&&inputs[j].value.includes('@'))return inputs[j].value.trim();}
+    return '';
+  }
+  function findName(){
+    var ids=['name','fullName','full-name','buyer-name','buyerName','customer-name','userName','user-name'];
+    for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el&&el.value)return el.value.trim();}
+    var inputs=document.querySelectorAll('input[name*="name"]:not([name*="email"]):not([type="email"]),input[placeholder*="name"]:not([placeholder*="email"]):not([type="email"]),input[placeholder*="Name"]:not([type="email"])');
+    for(var j=0;j<inputs.length;j++){if(inputs[j].value)return inputs[j].value.trim();}
+    return '';
+  }
+  var __realProcessPayment=function(a,b,c,d,e){
+    var amountCents,email,productName,productDescription,customerName,quantity;
+    if(a&&typeof a==='object'){
+      amountCents=a.amountCents;email=a.email;productName=a.productName;
+      productDescription=a.productDescription||'';customerName=a.name||'';quantity=a.quantity||1;
+    }else{
+      amountCents=typeof a==='number'?a:0;productName=typeof b==='string'?b:'';
+      productDescription=typeof c==='string'?c:'';email='';customerName='';quantity=1;
+    }
+    if(!email)email=findEmail();
+    if(!customerName)customerName=findName();
+    if(!productName){alert('Product name is required.');return Promise.reject('no_product_name');}
+    if(!amountCents||amountCents<100){alert('Amount must be at least $1.00');return Promise.reject('invalid_amount');}
+    if(!email){alert('Please enter your email address.');return Promise.reject('no_email');}
+    var successBase=window.location.href.split('?')[0];
+    var __pLoc=(document.documentElement.lang||navigator.language||'en');
+    return fetch(apiBase+'/api/landing-pages/public/'+slug+'/payment/checkout',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:email,name:customerName,amountCents:amountCents,productName:productName,productDescription:productDescription,quantity:quantity,locale:__pLoc,successUrl:successBase+'?payment=success&product='+encodeURIComponent(productName)+'&session_id={CHECKOUT_SESSION_ID}',cancelUrl:successBase+'?payment=cancelled'})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.checkoutUrl){window.location.href=d.checkoutUrl;}
+      else{alert(d.error||'Failed to process payment');throw new Error(d.error);}
+    });
+  };
+  Object.defineProperty(window,'__processPayment',{value:__realProcessPayment,writable:false,configurable:false});
+  document.addEventListener('DOMContentLoaded',function(){
+    var urlParams=new URLSearchParams(window.location.search);
+    if(urlParams.get('payment')==='success'){
+      var pName=urlParams.get('product')||'your item';
+      var overlay=document.createElement('div');overlay.id='payment-success-overlay';
+      overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999999;font-family:system-ui,-apple-system,sans-serif;';
+      function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+      var subTxt=successSubtext||('Thank you for purchasing '+pName+'.');
+      overlay.innerHTML='<div style="background:white;border-radius:16px;padding:40px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);"><div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><h2 style="margin:0 0 12px;font-size:24px;font-weight:700;color:#111827;">Payment Successful!</h2><p style="margin:0 0 24px;color:#6b7280;font-size:16px;">'+esc(subTxt)+'</p><button id="lp-pay-success-btn" style="padding:12px 32px;font-size:16px;font-weight:600;background:'+successBtnColor+';color:white;border:none;border-radius:8px;cursor:pointer;">'+esc(successBtnLabel)+'</button></div>';
+      document.body.appendChild(overlay);
+      var pBtn=document.getElementById('lp-pay-success-btn');
+      if(pBtn){pBtn.addEventListener('click',function(){if(successRedirect){window.location.href=successRedirect;}else{overlay.remove();window.history.replaceState({},'',window.location.pathname);}});}
+    }
+  });
+})();
+</script>  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">LTA<span> — Pronunciation Coach</span></div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('fr-CA', this)">🇫🇷 Français</button>
+    <button class="lang-btn" onclick="setLang('en-CA', this)">🇨🇦 English</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: Recorder + Scores -->
+  <div class="left-panel">
+
+    <!-- Phrase to practice -->
+    <div class="card phrase-card">
+      <div class="section-label">Phrase to practice</div>
+      <div class="phrase-label">Say this phrase aloud</div>
+      <div class="phrase-text placeholder" id="phraseDisplay">
+        Ask the coach for a phrase to practice →
+      </div>
+      <div class="phrase-hint" id="phraseHint"></div>
+    </div>
+
+    <!-- Recorder -->
+    <div class="card recorder-card">
+      <div class="section-label">Record your pronunciation</div>
+
+      <div class="lang-select-row">
+        <button class="lang-select-btn active" id="btnFR" onclick="setLang('fr-CA', null, this)">🇫🇷 French Canada</button>
+        <button class="lang-select-btn" id="btnEN" onclick="setLang('en-CA', null, this)">🇨🇦 English Canada</button>
+      </div>
+
+      <button class="record-btn" id="recordBtn" onclick="toggleRecording()" title="Click to record">
+        <svg class="mic-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor" class="mic-icon"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+        </svg>
+      </button>
+
+      <div class="waveform" id="waveform">
+        <div class="wave-bar" style="height:8px"></div>
+        <div class="wave-bar" style="height:14px"></div>
+        <div class="wave-bar" style="height:20px"></div>
+        <div class="wave-bar" style="height:26px"></div>
+        <div class="wave-bar" style="height:20px"></div>
+        <div class="wave-bar" style="height:14px"></div>
+        <div class="wave-bar" style="height:8px"></div>
+      </div>
+
+      <div class="record-status" id="recordStatus">Click the mic to start recording</div>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <!-- Score results -->
+    <div class="card score-card" id="scoreCard">
+      <div class="section-label">Your results</div>
+
+      <div class="score-grid">
+        <div class="score-item main">
+          <div class="score-name">Overall pronunciation</div>
+          <div class="score-value main" id="scorePron">—</div>
+          <div class="score-bar-wrap"><div class="score-bar" id="barPron"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="score-name">Accuracy</div>
+          <div class="score-value" id="scoreAcc">—</div>
+          <div class="score-bar-wrap"><div class="score-bar" id="barAcc"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="score-name">Fluency</div>
+          <div class="score-value" id="scoreFlu">—</div>
+          <div class="score-bar-wrap"><div class="score-bar" id="barFlu"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="score-name">Completeness</div>
+          <div class="score-value" id="scoreCom">—</div>
+          <div class="score-bar-wrap"><div class="score-bar" id="barCom"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="score-name">Prosody</div>
+          <div class="score-value" id="scorePro">—</div>
+          <div class="score-bar-wrap"><div class="score-bar" id="barPro"></div></div>
+        </div>
+      </div>
+
+      <div class="feedback-text" id="feedbackText"></div>
+
+      <div class="section-label" style="margin-top:1rem">Word breakdown</div>
+      <div class="words-wrap" id="wordsWrap"></div>
+
+      <button class="try-again-btn" onclick="resetRecorder()">↺ Try again with the same phrase</button>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Chat coach -->
+  <div class="chat-panel">
+    <div class="section-label">Your coach</div>
+    <div class="chat-iframe-wrap">
+      <iframe id="coachIframe"
+        src="https://app.paygogpt.com/agents/63330083/embed"
+        allow="microphone"
+        title="LTA Pronunciation Coach">
+      </iframe>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Config ────────────────────────────────────────────────────────────────
+  const API_URL   = 'https://pronunciation-api-l0pg.onrender.com/assess';
+  const AGENTS    = {
+    'fr-CA': 'https://app.paygogpt.com/agents/63330083/embed',
+    'en-CA': 'https://app.paygogpt.com/agents/38837089/embed'
+  };
+  const PHRASES   = {
+    'fr-CA': [
+      { text: 'Bonjour, comment allez-vous aujourd\'hui?', hint: 'Focus on the nasal vowels: "on", "ou"' },
+      { text: 'Je voudrais un café, s\'il vous plaît.', hint: 'The Québec "r" is uvular — from the back of the throat' },
+      { text: 'Il fait beau temps ce matin.', hint: 'Link "il" and "fait" naturally — i fait' },
+      { text: 'Où est la station de métro la plus proche?', hint: 'Watch the liaison on les before vowels' },
+      { text: 'J\'habite à Montréal depuis cinq ans.', hint: 'Silent h in habite - no pause before it' }
+    ],
+    'en-CA': [
+      { text: 'About the house - the lights are out.', hint: 'Canadian raising: about and out vowels shift before voiceless consonants' },
+      { text: 'Sorry, I didn\'t catch that, eh?', hint: 'Sorry rhymes with story in Canadian English' },
+      { text: 'The weather in Toronto is quite cold today.', hint: 'Flap the t in Toronto - sounds like a soft d' },
+      { text: 'Can you pass me a double-double, please?', hint: 'Natural linking: double-double flows as one unit' },
+      { text: 'We\'re going to the cottage this weekend.', hint: 'Going to often reduces to gonna in natural speech' }
+    ]
+  };
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let currentLang    = 'fr-CA';
+  let currentPhrase  = null;
+  let mediaRecorder  = null;
+  let audioChunks    = [];
+  let isRecording    = false;
+
+  setRandomPhrase();
+
+  function setLang(lang, headerBtn, cardBtn) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    if (headerBtn) headerBtn.classList.add('active');
+    document.querySelectorAll('.lang-select-btn').forEach(b => b.classList.remove('active'));
+    if (cardBtn) cardBtn.classList.add('active');
+    else document.getElementById(lang === 'fr-CA' ? 'btnFR' : 'btnEN').classList.add('active');
+    document.querySelectorAll('.lang-btn').forEach(b => {
+      if ((lang === 'fr-CA' && b.textContent.includes('Fran')) ||
+          (lang === 'en-CA' && b.textContent.includes('Engl'))) b.classList.add('active');
+    });
+    document.getElementById('coachIframe').src = AGENTS[lang];
+    setRandomPhrase();
+    resetRecorder();
+  }
+
+  function setRandomPhrase() {
+    const list = PHRASES[currentLang];
+    const phrase = list[Math.floor(Math.random() * list.length)];
+    currentPhrase = phrase.text;
+    const el = document.getElementById('phraseDisplay');
+    el.textContent = phrase.text;
+    el.classList.remove('placeholder');
+    document.getElementById('phraseHint').textContent = '💡 ' + phrase.hint;
+  }
+
+  async function toggleRecording() {
+    if (isRecording) stopRecording();
+    else await startRecording();
+  }
+
+  async function startRecording() {
+    hideError();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream, { mimeType: getMimeType() });
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); processAudio(); };
+      mediaRecorder.start(100);
+      isRecording = true;
+      document.getElementById('recordBtn').classList.add('recording');
+      document.getElementById('waveform').classList.add('visible');
+      setStatus('Recording... click again to stop', 'active');
+    } catch (err) {
+      showError(err.name === 'NotAllowedError' ? 'Microphone access denied. Please allow and try again.' : 'Could not start recording: ' + err.message);
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    isRecording = false;
+    document.getElementById('recordBtn').classList.remove('recording');
+    document.getElementById('waveform').classList.remove('visible');
+    setStatus('Processing...', 'processing');
+  }
+
+  function getMimeType() {
+    for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'])
+      if (MediaRecorder.isTypeSupported(t)) return t;
+    return '';
+  }
+
+  async function processAudio() {
+    try {
+      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      const buf = await blob.arrayBuffer();
+      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'audio', reference_text: currentPhrase, locale: currentLang, audio_base64: b64 })
+      });
+      if (!res.ok) throw new Error('API error ' + res.status);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Assessment failed');
+      showScores(data);
+      setStatus('Assessment complete \u2713', '');
+    } catch (err) {
+      setStatus('Click the mic to start recording', '');
+      showError('Assessment failed: ' + err.message);
+    }
+  }
+
+  function showScores(data) {
+    const card = document.getElementById('scoreCard');
+    card.classList.add('visible');
+    setScore('Pron', data.pronunciation_score);
+    setScore('Acc', data.accuracy_score);
+    setScore('Flu', data.fluency_score);
+    setScore('Com', data.completeness_score);
+    setScore('Pro', data.prosody_score);
+    document.getElementById('feedbackText').textContent = data.feedback || '';
+    const wrap = document.getElementById('wordsWrap');
+    wrap.innerHTML = '';
+    (data.words || []).forEach((w) => {
+      const s = w.accuracy || 0;
+      const cls = s >= 80 ? 'good' : s >= 60 ? 'ok' : 'poor';
+      const chip = document.createElement('div');
+      chip.className = 'word-chip ' + cls;
+      chip.innerHTML = '<span>' + w.word + '</span><span class="w-score">' + Math.round(s) + '</span>';
+      wrap.appendChild(chip);
+    });
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function setScore(key, val) {
+    const v = Math.round(val || 0);
+    const c = v >= 80 ? 'var(--teal)' : v >= 60 ? 'var(--warn)' : 'var(--danger)';
+    document.getElementById('score' + key).textContent = v;
+    document.getElementById('score' + key).style.color = c;
+    setTimeout(() => {
+      document.getElementById('bar' + key).style.width = v + '%';
+      document.getElementById('bar' + key).style.background = c;
+    }, 100);
+  }
+
+  function resetRecorder() {
+    document.getElementById('scoreCard').classList.remove('visible');
+    document.getElementById('waveform').classList.remove('visible');
+    setStatus('Click the mic to start recording', '');
+    hideError();
+    setRandomPhrase();
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('recordStatus');
+    el.textContent = msg;
+    el.className = 'record-status' + (type ? ' ' + type : '');
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hideError() {
+    document.getElementById('errorMsg').classList.remove('visible');
+  }
+</script>
+
+</body>
+</html>
