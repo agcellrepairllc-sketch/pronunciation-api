@@ -2,3 +2,5 @@ flask==3.0.0
 flask-cors==4.0.0
 requests==2.31.0
 gunicorn==21.2.0
+azure-cognitiveservices-speech==1.43.0
+flask-sock==0.7.0
