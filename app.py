@@ -1,6 +1,7 @@
 """
 Pronunciation Assessment Middleware API
-Bridges ChatbotBuilder AI → Azure Speech Services
+Bridges PaygoGPT + ChatbotBuilder → Azure Speech Services
+Supports: audio mode (voice widget) + text mode (social media)
 """
 
 from flask import Flask, request, jsonify
@@ -11,8 +12,12 @@ import base64
 import json
 import subprocess
 import tempfile
+import struct
+
 app = Flask(__name__)
 CORS(app)
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def get_azure_key():
     return os.environ.get('AZURE_SPEECH_KEY', '')
@@ -20,172 +25,250 @@ def get_azure_key():
 def get_azure_region():
     return os.environ.get('AZURE_SPEECH_REGION', 'canadaeast')
 
+def build_silent_wav(duration_ms=200, sample_rate=16000):
+    """Build a valid PCM WAV with silence — used for text-only assessment."""
+    num_samples = int(sample_rate * duration_ms / 1000)
+    pcm_data    = b'\x00\x00' * num_samples          # 16-bit silence
+    data_size   = len(pcm_data)
+    header = struct.pack(
+        '<4sI4s4sIHHIIHH4sI',
+        b'RIFF', 36 + data_size,
+        b'WAVE', b'fmt ', 16,
+        1, 1,                                         # PCM, mono
+        sample_rate, sample_rate * 2,                 # byte rate
+        2, 16,                                        # block align, bits
+        b'data', data_size
+    )
+    return header + pcm_data
+
 def download_audio(audio_url):
-    """Download audio and convert to WAV format for best Azure compatibility"""
+    """Download audio and convert to 16kHz mono WAV using ffmpeg."""
     try:
         response = requests.get(audio_url, timeout=30)
         response.raise_for_status()
         audio_data = response.content
-        
-        # Create temp files
+
         with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as mp3_file:
             mp3_file.write(audio_data)
             mp3_path = mp3_file.name
-        
+
         wav_path = mp3_path.replace('.mp3', '.wav')
-        
-        # Convert to WAV (16kHz, mono, 16-bit PCM) using ffmpeg
+
         try:
             subprocess.run([
                 'ffmpeg', '-y', '-i', mp3_path,
-                '-ar', '16000',
-                '-ac', '1',
-                '-sample_fmt', 's16',
+                '-ar', '16000', '-ac', '1', '-sample_fmt', 's16',
                 wav_path
             ], capture_output=True, check=True)
-            
+
             with open(wav_path, 'rb') as f:
                 wav_data = f.read()
-            
+
             os.unlink(mp3_path)
             os.unlink(wav_path)
-            
             return wav_data
+
         except subprocess.CalledProcessError:
             os.unlink(mp3_path)
             return audio_data
-            
-    except:
+
+    except Exception:
         return None
 
-def assess_pronunciation(audio_data, reference_text, language='en-US'):
-    azure_key = get_azure_key()
+def call_azure(audio_bytes, reference_text, language):
+    """POST audio (real or silent) to Azure Pronunciation Assessment REST API."""
+    azure_key    = get_azure_key()
     azure_region = get_azure_region()
-    
+
     pron_config = {
         "ReferenceText": reference_text,
         "GradingSystem": "HundredMark",
-        "Granularity": "Word",
+        "Granularity": "Phoneme",
         "Dimension": "Comprehensive",
+        "EnableMiscue": True,
         "EnableProsodyAssessment": "true"
     }
-    
     pron_config_b64 = base64.b64encode(json.dumps(pron_config).encode()).decode()
-    
-    url = f"https://{azure_region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1"
-    url += f"?language={language}&format=detailed"
-    
+
+    url = (
+        f"https://{azure_region}.stt.speech.microsoft.com"
+        f"/speech/recognition/conversation/cognitiveservices/v1"
+        f"?language={language}&format=detailed&usePipelineVersion=0"
+    )
     headers = {
         "Ocp-Apim-Subscription-Key": azure_key,
         "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
         "Pronunciation-Assessment": pron_config_b64,
         "Accept": "application/json"
     }
-    
+
     try:
-        response = requests.post(url, headers=headers, data=audio_data, timeout=30)
-        if response.status_code == 200:
-            return {"success": True, "data": response.json()}
-        else:
-            return {"success": False, "error": f"Azure error {response.status_code}", "details": response.text}
+        resp = requests.post(url, headers=headers, data=audio_bytes, timeout=30)
+        if resp.status_code == 200:
+            return {"success": True, "data": resp.json()}
+        return {"success": False, "error": f"Azure error {resp.status_code}", "details": resp.text}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def format_response(azure_result):
+def format_response(azure_result, mode="audio"):
+    """Convert raw Azure JSON into a clean PaygoGPT-friendly response."""
     if not azure_result.get('success'):
         return {
             "success": False,
+            "mode": mode,
             "error": azure_result.get('error', 'Unknown error'),
             "details": azure_result.get('details', ''),
-            "feedback": "Sorry, I couldn't assess your pronunciation. Please try again."
+            "feedback": "Sorry, I couldn't assess the pronunciation. Please try again."
         }
-    
-    data = azure_result.get('data', {})
+
+    data  = azure_result.get('data', {})
     nbest = data.get('NBest', [{}])[0] if data.get('NBest') else {}
-    
-    pron_score = round(nbest.get('PronScore', 0), 1)
-    accuracy = round(nbest.get('AccuracyScore', 0), 1)
-    fluency = round(nbest.get('FluencyScore', 0), 1)
-    completeness = round(nbest.get('CompletenessScore', 0), 1)
-    prosody = round(nbest.get('ProsodyScore', 0), 1) if 'ProsodyScore' in nbest else None
-    
+    pa    = nbest.get('PronunciationAssessment', nbest)   # both formats
+
+    pron_score   = round(pa.get('PronScore',        nbest.get('PronScore',        0)), 1)
+    accuracy     = round(pa.get('AccuracyScore',    nbest.get('AccuracyScore',    0)), 1)
+    fluency      = round(pa.get('FluencyScore',     nbest.get('FluencyScore',     0)), 1)
+    completeness = round(pa.get('CompletenessScore',nbest.get('CompletenessScore',0)), 1)
+    prosody      = round(pa.get('ProsodyScore',     nbest.get('ProsodyScore',     0)), 1)
+
+    # Human-friendly feedback (for PaygoGPT agent to use)
     if pron_score >= 90:
-        feedback = f"🌟 Excellent! Your pronunciation scored {pron_score}/100."
+        feedback = f"🌟 Excellent! Pronunciation score: {pron_score}/100."
     elif pron_score >= 75:
-        feedback = f"👍 Good job! Your pronunciation scored {pron_score}/100."
+        feedback = f"👍 Good job! Pronunciation score: {pron_score}/100."
     elif pron_score >= 60:
-        feedback = f"📚 Not bad! Your pronunciation scored {pron_score}/100."
+        feedback = f"📚 Not bad! Pronunciation score: {pron_score}/100."
     else:
-        feedback = f"💪 Keep trying! Your pronunciation scored {pron_score}/100."
-    
+        feedback = f"💪 Keep practicing! Pronunciation score: {pron_score}/100."
+
+    # Word-level breakdown
     words_feedback = []
-    problem_words = []
-    
+    problem_words  = []
     for word in nbest.get('Words', []):
-        word_score = round(word.get('AccuracyScore', 0), 1)
-        error_type = word.get('ErrorType', 'None')
-        words_feedback.append({"word": word.get('Word'), "score": word_score, "error": error_type})
-        if word_score < 70 or error_type != 'None':
-            problem_words.append(word.get('Word'))
-    
+        w_pa    = word.get('PronunciationAssessment', word)
+        w_score = round(w_pa.get('AccuracyScore', word.get('AccuracyScore', 0)), 1)
+        w_error = w_pa.get('ErrorType', word.get('ErrorType', 'None'))
+        words_feedback.append({
+            "word":     word.get('Word', ''),
+            "accuracy": w_score,
+            "error":    w_error
+        })
+        if w_score < 70 or w_error not in ('None', ''):
+            problem_words.append(word.get('Word', ''))
+
     if problem_words:
-        feedback += f" Words to practice: {', '.join(problem_words)}"
-    
+        feedback += f" Focus on: {', '.join(problem_words[:3])}."
+
     return {
-        "success": True,
+        "success":            True,
+        "mode":               mode,
         "pronunciation_score": pron_score,
-        "accuracy_score": accuracy,
-        "fluency_score": fluency,
+        "accuracy_score":     accuracy,
+        "fluency_score":      fluency,
         "completeness_score": completeness,
-        "prosody_score": prosody,
-        "feedback": feedback,
-        "words": words_feedback,
-        "recognized_text": nbest.get('Display', '')
+        "prosody_score":      prosody,
+        "feedback":           feedback,
+        "words":              words_feedback,
+        "recognized_text":    nbest.get('Display', nbest.get('Lexical', ''))
     }
+
+# ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route('/', methods=['GET'])
 def home():
-    azure_key = get_azure_key()
+    key = get_azure_key()
     return jsonify({
-        "status": "running",
-        "service": "Pronunciation Assessment Middleware",
-        "azure_configured": len(azure_key) > 0,
-        "key_length": len(azure_key),
-        "region": get_azure_region()
+        "status":           "running",
+        "service":          "LTA Pronunciation Assessment API",
+        "azure_configured": len(key) > 0,
+        "region":           get_azure_region(),
+        "endpoints": {
+            "audio_mode": "POST /assess        — audio_url + reference_text + language",
+            "text_mode":  "POST /assess-text   — reference_text + language (no audio)",
+            "unified":    "POST /assess        — omit audio_url to auto-switch to text mode"
+        }
     })
+
 
 @app.route('/assess', methods=['POST'])
 def assess():
+    """
+    Unified endpoint — works for both audio and text mode.
+    PaygoGPT sends: { reference_text, locale/language, audio_url (optional), audio_base64 (optional) }
+    If no audio is provided, falls back to text-mode assessment automatically.
+    """
     azure_key = get_azure_key()
-    
     if not azure_key:
         return jsonify({"success": False, "error": "Azure key not configured"}), 500
-    
+
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "error": "No JSON data"}), 400
-    
-    audio_url = data.get('audio_url')
-    reference_text = data.get('reference_text', data.get('text', ''))
-    language = data.get('language', 'en-US')
-    
-    if not audio_url:
-        return jsonify({"success": False, "error": "audio_url required"}), 400
+
+    reference_text = data.get('reference_text', data.get('text', '')).strip()
+    # Accept both "locale" (PaygoGPT) and "language" (CBB) keys
+    language       = data.get('locale', data.get('language', 'fr-CA'))
+    audio_url      = data.get('audio_url', '')
+    audio_base64   = data.get('audio_base64', '')
+    mode           = data.get('mode', 'audio' if (audio_url or audio_base64) else 'text')
+
     if not reference_text:
-        return jsonify({"success": False, "error": "reference_text required"}), 400
-    
-    audio_data = download_audio(audio_url)
-    if audio_data is None:
-        return jsonify({"success": False, "error": "Failed to download audio"}), 400
-    
-    azure_result = assess_pronunciation(audio_data, reference_text, language)
-    return jsonify(format_response(azure_result))
+        return jsonify({"success": False, "error": "reference_text is required"}), 400
+
+    # ── TEXT MODE (social media — no real audio) ──────────────────────────────
+    if mode == 'text' or (not audio_url and not audio_base64):
+        silent_wav   = build_silent_wav(duration_ms=200)
+        azure_result = call_azure(silent_wav, reference_text, language)
+        return jsonify(format_response(azure_result, mode="text"))
+
+    # ── AUDIO MODE (voice widget — real speech) ───────────────────────────────
+    if audio_base64:
+        try:
+            audio_bytes = base64.b64decode(audio_base64)
+        except Exception:
+            return jsonify({"success": False, "error": "Invalid audio_base64"}), 400
+    else:
+        audio_bytes = download_audio(audio_url)
+        if audio_bytes is None:
+            return jsonify({"success": False, "error": "Failed to download audio from audio_url"}), 400
+
+    azure_result = call_azure(audio_bytes, reference_text, language)
+    return jsonify(format_response(azure_result, mode="audio"))
+
+
+@app.route('/assess-text', methods=['POST'])
+def assess_text():
+    """
+    Dedicated text-only endpoint (no audio needed).
+    Ideal for social media channels: Instagram, Facebook, WhatsApp.
+    Body: { "reference_text": "...", "locale": "fr-CA" }
+    """
+    azure_key = get_azure_key()
+    if not azure_key:
+        return jsonify({"success": False, "error": "Azure key not configured"}), 500
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "No JSON data"}), 400
+
+    reference_text = data.get('reference_text', data.get('text', '')).strip()
+    language       = data.get('locale', data.get('language', 'fr-CA'))
+
+    if not reference_text:
+        return jsonify({"success": False, "error": "reference_text is required"}), 400
+
+    silent_wav   = build_silent_wav(duration_ms=200)
+    azure_result = call_azure(silent_wav, reference_text, language)
+    return jsonify(format_response(azure_result, mode="text"))
+
 
 @app.route('/languages', methods=['GET'])
 def languages():
     return jsonify([
+        {"code": "fr-CA", "name": "French (Canada) — Primary"},
+        {"code": "en-CA", "name": "English (Canada) — Primary"},
         {"code": "en-US", "name": "English (US)"},
-        {"code": "en-CA", "name": "English (Canada)"},
+        {"code": "fr-FR", "name": "French (France)"},
         {"code": "es-ES", "name": "Spanish (Spain)"},
         {"code": "es-MX", "name": "Spanish (Mexico)"},
         {"code": "es-AR", "name": "Spanish (Argentina)"},
@@ -193,7 +276,6 @@ def languages():
         {"code": "es-CL", "name": "Spanish (Chile)"},
         {"code": "es-PE", "name": "Spanish (Peru)"},
         {"code": "es-VE", "name": "Spanish (Venezuela)"},
-        {"code": "es-EC", "name": "Spanish (Ecuador)"},
         {"code": "es-GT", "name": "Spanish (Guatemala)"},
         {"code": "es-CU", "name": "Spanish (Cuba)"},
         {"code": "es-BO", "name": "Spanish (Bolivia)"},
@@ -207,9 +289,8 @@ def languages():
         {"code": "es-UY", "name": "Spanish (Uruguay)"},
         {"code": "es-PR", "name": "Spanish (Puerto Rico)"},
         {"code": "es-US", "name": "Spanish (US)"},
-        {"code": "fr-FR", "name": "French (France)"},
-        {"code": "fr-CA", "name": "French (Canada)"}
     ])
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
