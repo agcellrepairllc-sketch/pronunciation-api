@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://agcellrepairllc-sketch.github.io/pronunciation-api/sitemap.xml
