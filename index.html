@@ -333,35 +333,33 @@
 </div>
 
 <script>
-  // ── Config ────────────────────────────────────────────────────────────────
-  const API_URL   = 'https://pronunciation-api-l0pg.onrender.com/assess';
-  const AGENTS    = {
+  const API_URL = 'https://pronunciation-api-l0pg.onrender.com/assess';
+  const AGENTS = {
     'fr-CA': 'https://app.paygogpt.com/agents/63330083/embed',
     'en-CA': 'https://app.paygogpt.com/agents/38837089/embed'
   };
-  const PHRASES   = {
+  const PHRASES = {
     'fr-CA': [
       { text: 'Bonjour, comment allez-vous aujourd\'hui?', hint: 'Focus on the nasal vowels: "on", "ou"' },
-      { text: 'Je voudrais un café, s\'il vous plaît.', hint: 'The Québec "r" is uvular — from the back of the throat' },
-      { text: 'Il fait beau temps ce matin.', hint: 'Link "il" and "fait" naturally — i fait' },
-      { text: 'Où est la station de métro la plus proche?', hint: 'Watch the liaison on les before vowels' },
-      { text: 'J\'habite à Montréal depuis cinq ans.', hint: 'Silent h in habite - no pause before it' }
+      { text: 'Je voudrais un café, s\'il vous plaît.', hint: 'The Québec "r" is uvular - from the back of the throat' },
+      { text: 'Il fait beau temps ce matin.', hint: 'Link "il" and "fait" naturally - "i-fait"' },
+      { text: 'O\u00f9 est la station de m\u00e9tro la plus proche?', hint: 'Watch the liaison on "les" before vowels' },
+      { text: 'J\'habite \u00e0 Montr\u00e9al depuis cinq ans.', hint: 'Silent "h" in "habite" - no pause before it' }
     ],
     'en-CA': [
-      { text: 'About the house - the lights are out.', hint: 'Canadian raising: about and out vowels shift before voiceless consonants' },
-      { text: 'Sorry, I didn\'t catch that, eh?', hint: 'Sorry rhymes with story in Canadian English' },
-      { text: 'The weather in Toronto is quite cold today.', hint: 'Flap the t in Toronto - sounds like a soft d' },
-      { text: 'Can you pass me a double-double, please?', hint: 'Natural linking: double-double flows as one unit' },
-      { text: 'We\'re going to the cottage this weekend.', hint: 'Going to often reduces to gonna in natural speech' }
+      { text: 'About the house - the lights are out.', hint: 'Canadian raising: "about" and "out" vowels shift before voiceless consonants' },
+      { text: 'Sorry, I didn\'t catch that, eh?', hint: '"Sorry" rhymes with "story" in Canadian English' },
+      { text: 'The weather in Toronto is quite cold today.', hint: 'Flap the "t" in "Toronto" - sounds like a soft "d"' },
+      { text: 'Can you pass me a double-double, please?', hint: 'Natural linking: "double-double" flows as one unit' },
+      { text: 'We\'re going to the cottage this weekend.', hint: '"Going to" often reduces to "gonna" in natural speech' }
     ]
   };
 
-  // ── State ────────────────────────────────────────────────────────────────
-  let currentLang    = 'fr-CA';
-  let currentPhrase  = null;
-  let mediaRecorder  = null;
-  let audioChunks    = [];
-  let isRecording    = false;
+  let currentLang = 'fr-CA';
+  let currentPhrase = null;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
 
   setRandomPhrase();
 
@@ -388,7 +386,7 @@
     const el = document.getElementById('phraseDisplay');
     el.textContent = phrase.text;
     el.classList.remove('placeholder');
-    document.getElementById('phraseHint').textContent = '💡 ' + phrase.hint;
+    document.getElementById('phraseHint').textContent = '\u1f4a1 ' + phrase.hint;
   }
 
   async function toggleRecording() {
@@ -432,7 +430,14 @@
     try {
       const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
       const buf = await blob.arrayBuffer();
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      // Chunked base64 - avoids call stack overflow on large audio
+      const bytes = new Uint8Array(buf);
+      let binary = '';
+      const CHUNK = 8192;
+      for (let i = 0; i < bytes.length; i += CHUNK)
+        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      const b64 = btoa(binary);
+
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -460,7 +465,7 @@
     document.getElementById('feedbackText').textContent = data.feedback || '';
     const wrap = document.getElementById('wordsWrap');
     wrap.innerHTML = '';
-    (data.words || []).forEach((w) => {
+    (data.words || []).forEach(w => {
       const s = w.accuracy || 0;
       const cls = s >= 80 ? 'good' : s >= 60 ? 'ok' : 'poor';
       const chip = document.createElement('div');
