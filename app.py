@@ -105,7 +105,7 @@ def format_response(azure_result, mode="audio"):
         }
     data  = azure_result.get('data', {})
     nbest = data.get('NBest', [{}])[0] if data.get('NBest') else {}
-    pa    = nbest.get('PronunciationAssessment', nbest)
+    pa    = nbest.get('PronunciationAssessment', {})
     pron  = round(pa.get('PronScore',        nbest.get('PronScore',        0)), 1)
     acc   = round(pa.get('AccuracyScore',     nbest.get('AccuracyScore',    0)), 1)
     flu   = round(pa.get('FluencyScore',      nbest.get('FluencyScore',     0)), 1)
