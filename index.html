@@ -1,516 +1,1324 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-<!-- BASE:START (managed by Coding Agent — do not edit) -->
-<base href="/pronunciation-api/">
-<!-- BASE:END -->
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
-
-
-<!-- SEO Meta Tags -->
-<title>LTA — Pronunciation Coach</title>
-<meta property="og:title" content="LTA — Pronunciation Coach" />
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="LTA — Pronunciation Coach" />
-<!-- End SEO Meta Tags -->
-<script data-lp-token-hydrate>
-(function(){try{
-  var slug="lp-mq2u9ewn-c6i18";
-  var SK='lp_access_'+slug;
-  var map={access_token:'lp_pw_',allowlist_access_token:'lp_al_',pin_access_token:'lp_pin_',paywall_access_token:'lp_paid_'};
-  var u=new URL(location.href);var found=null;var changed=false;
-  Object.keys(map).forEach(function(p){var v=u.searchParams.get(p);if(v){found=v;try{localStorage.setItem(map[p]+slug,v);}catch(e){}u.searchParams.delete(p);changed=true;}});
-  if(found){try{sessionStorage.setItem(SK,found);}catch(e){}}
-  else{try{if(!sessionStorage.getItem(SK)){var t=localStorage.getItem('lp_pw_'+slug)||localStorage.getItem('lp_al_'+slug)||localStorage.getItem('lp_pin_'+slug)||localStorage.getItem('lp_paid_'+slug);if(t)sessionStorage.setItem(SK,t);}}catch(e){}}
-  if(changed){try{history.replaceState(null,'',u.toString());}catch(e){}}
-  function getTok(){try{return sessionStorage.getItem(SK)||localStorage.getItem('lp_pw_'+slug)||localStorage.getItem('lp_al_'+slug)||localStorage.getItem('lp_pin_'+slug)||localStorage.getItem('lp_paid_'+slug);}catch(e){return null;}}
-  function needsToken(url,method){if(!url)return false;var s=String(url);var m=(method||'GET').toUpperCase();var isSheetWrite=(m==='POST'||m==='PATCH'||m==='PUT'||m==='DELETE')&&/\/sheet-rows(\/|$|\?)/.test(s);var isSheetRead=/\/sheet-data(\/|$|\?)/.test(s);var isLlm=/\/api\/landing-pages\/public\/[^/]+\/(llm|llm-config)(\/|$|\?)/.test(s);return isSheetWrite||isSheetRead||isLlm;}
-  if(window.fetch){var _f=window.fetch;window.fetch=function(input,init){try{var url=typeof input==='string'?input:(input&&input.url)||'';var method=(init&&init.method)||(input&&input.method)||'GET';if(needsToken(url,method)){var tok=getTok();if(tok){init=init||{};var h=new Headers(init.headers||(typeof input!=='string'?input.headers:undefined)||{});if(!h.has('X-Landing-Page-Token'))h.set('X-Landing-Page-Token',tok);init.headers=h;}}}catch(e){}return _f.call(this,input,init);};}
-  if(window.XMLHttpRequest){var _o=XMLHttpRequest.prototype.open;var _s=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.open=function(m,u){this.__lpM=m;this.__lpU=u;return _o.apply(this,arguments);};XMLHttpRequest.prototype.send=function(){try{if(needsToken(this.__lpU,this.__lpM)){var tok=getTok();if(tok)this.setRequestHeader('X-Landing-Page-Token',tok);}}catch(e){}return _s.apply(this,arguments);};}
-}catch(e){}})();
-</script>
-
-<script data-field-replace>
-(function(){
-  var params=new URLSearchParams(window.location.search);
-  var fields={};
-  var paramMap={
-    'first_name':'firstName','last_name':'lastName','full_name':'fullName',
-    'email':'email','phone':'phone','company':'company',
-    'city':'city','state':'state','country':'country'
-  };
-  var skipTags={'SCRIPT':1,'STYLE':1,'NOSCRIPT':1,'TEXTAREA':1,'CODE':1,'PRE':1};
-  var hasUrlFields=false;
-  for(var p in paramMap){
-    var v=params.get(p);
-    if(v){fields[paramMap[p]]=v;hasUrlFields=true;}
-  }
-  var contactId=params.get('contact_id');
-  function esc(s){
-    if(!s)return s;
-    var d=document.createElement('div');
-    d.appendChild(document.createTextNode(s));
-    return d.innerHTML;
-  }
-  function doReplace(data){
-    var r={};
-    r['{{full_name}}']=esc(((data.firstName||'')+' '+(data.lastName||'')).trim()||((data.fullName||data.name)||''));
-    r['{{first_name}}']=esc(data.firstName||(data.name?data.name.split(' ')[0]:'')||'');
-    r['{{last_name}}']=esc(data.lastName||(data.name&&data.name.indexOf(' ')>-1?data.name.substring(data.name.indexOf(' ')+1):'')||'');
-    r['{{email}}']=esc(data.email||'');
-    r['{{phone}}']=esc(data.phone||'');
-    r['{{company}}']=esc(data.company||'');
-    r['{{city}}']=esc(data.city||'');
-    r['{{state}}']=esc(data.state||'');
-    r['{{country}}']=esc(data.country||'');
-    r['{{date}}']=new Date().toLocaleDateString();
-    r['{{time}}']=new Date().toLocaleTimeString();
-    r['{{location}}']=[data.city,data.state,data.country].filter(Boolean).join(', ');
-    r['{{tracking_id}}']=esc(data.trackingId||'');
-    r['{{lastClickedProduct}}']=esc(data.lastClickedProduct||'');
-    r['{{lastProductClickDate}}']=esc(data.lastProductClickDate||'');
-    r['{{lastClickedProductPrice}}']=esc(data.lastClickedProductPrice||'');
-    r['{{lastClickedProductURL}}']=esc(data.lastClickedProductURL||'');
-    r['{{productsClickedCount}}']=esc(data.productsClickedCount||'0');
-    r['{{ip_address}}']=esc(data.ipAddress||'');
-    r['{{ip}}']=esc(data.ipAddress||'');
-    if(data.customFields){
-      for(var k in data.customFields){
-        r['{{'+k+'}}']=esc(String(data.customFields[k]||''));
-      }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LTA — Coach de Prononciation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --blue:    #1565C0;
+      --blue-dk: #0D47A1;
+      --blue-lt: #1976D2;
+      --teal:    #36D6B5;
+      --teal-dk: #26A699;
+      --green:   #4CAF50;
+      --red:     #E53935;
+      --gold:    #FFB300;
+      --bg:      #F4F7FB;
+      --surface: #FFFFFF;
+      --border:  #DDE3F0;
+      --text:    #1A1F36;
+      --muted:   #6B7280;
+      --radius:  12px;
+      --shadow:  0 2px 16px rgba(21,101,192,.10);
     }
-    params.forEach(function(v,k){
-      if(!paramMap[k]&&k!=='contact_id'&&k!=='page_id'&&k.indexOf('utm_')!==0){
-        r['{{'+k+'}}']=esc(v);
-      }
-    });
-    var hasValues=false;
-    for(var key in r){if(r[key]){hasValues=true;break;}}
-    if(!hasValues)return;
-    var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{
-      acceptNode:function(n){
-        var p=n.parentNode;
-        if(p&&skipTags[p.nodeName])return NodeFilter.FILTER_REJECT;
-        return NodeFilter.FILTER_ACCEPT;
-      }
-    });
-    var node;
-    while(node=walker.nextNode()){
-      var txt=node.nodeValue;
-      if(txt&&txt.indexOf('{{')>-1){
-        var changed=txt;
-        for(var ph in r){
-          if(r[ph]&&changed.indexOf(ph)>-1){
-            changed=changed.split(ph).join(r[ph]);
-          }
-        }
-        if(changed!==txt)node.nodeValue=changed;
-      }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
     }
-    var attrs=['value','placeholder','content','alt','title'];
-    attrs.forEach(function(attr){
-      var els=document.querySelectorAll('['+attr+'*="{{"]');
-      for(var i=0;i<els.length;i++){
-        var tag=els[i].tagName;
-        if(skipTags[tag])continue;
-        var val=els[i].getAttribute(attr);
-        if(val){
-          var nv=val;
-          for(var ph in r){
-            if(r[ph]&&nv.indexOf(ph)>-1){
-              nv=nv.split(ph).join(r[ph]);
-            }
-          }
-          if(nv!==val)els[i].setAttribute(attr,nv);
-        }
-      }
-    });
-  }
-  function run(){
-    if(contactId){
-      var xhr=new XMLHttpRequest();
-      xhr.open('GET','https://app.paygogpt.com/api/landing/context/'+encodeURIComponent(contactId)+'?page_id=4600');
-      xhr.onload=function(){
-        if(xhr.status===200){
-          try{
-            var resp=JSON.parse(xhr.responseText);
-            if(resp.success&&resp.contact){
-              var merged=resp.contact;
-              for(var k in fields){merged[k]=fields[k];}
-              doReplace(merged);
-              return;
-            }
-          }catch(e){}
-        }
-        if(hasUrlFields)doReplace(fields);
-      };
-      xhr.onerror=function(){if(hasUrlFields)doReplace(fields);};
-      xhr.send();
-    }else if(hasUrlFields){
-      doReplace(fields);
+
+    /* ── Utility ── */
+    .hidden  { display: none !important; }
+    .sr-only { position: absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+
+    /* ════════════════════════════════════════
+       PAYWALL SCREEN
+    ════════════════════════════════════════ */
+    #screen-paywall {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      text-align: center;
+      background: linear-gradient(135deg, var(--blue-dk) 0%, var(--blue) 60%, var(--blue-lt) 100%);
+      color: #fff;
     }
-  }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',run);}
-  else{run();}
-})();
-</script>
-<script data-payment>
-(function(){
-  var slug='7aSWqy5eB';
-  var apiBase='https://app.paygogpt.com';
-  var successSubtext='';var successBtnLabel='Continue';var successBtnColor='#16a34a';var successRedirect='';
-  function findEmail(){
-    var ids=['email','emailAddress','buyer-email','buyerEmail','user-email','userEmail','checkout-email','customer-email','contact-email'];
-    for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el&&el.value&&el.value.includes('@'))return el.value.trim();}
-    var inputs=document.querySelectorAll('input[type="email"],input[name*="email"],input[placeholder*="email"],input[placeholder*="Email"]');
-    for(var j=0;j<inputs.length;j++){if(inputs[j].value&&inputs[j].value.includes('@'))return inputs[j].value.trim();}
-    return '';
-  }
-  function findName(){
-    var ids=['name','fullName','full-name','buyer-name','buyerName','customer-name','userName','user-name'];
-    for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el&&el.value)return el.value.trim();}
-    var inputs=document.querySelectorAll('input[name*="name"]:not([name*="email"]):not([type="email"]),input[placeholder*="name"]:not([placeholder*="email"]):not([type="email"]),input[placeholder*="Name"]:not([type="email"])');
-    for(var j=0;j<inputs.length;j++){if(inputs[j].value)return inputs[j].value.trim();}
-    return '';
-  }
-  var __realProcessPayment=function(a,b,c,d,e){
-    var amountCents,email,productName,productDescription,customerName,quantity;
-    if(a&&typeof a==='object'){
-      amountCents=a.amountCents;email=a.email;productName=a.productName;
-      productDescription=a.productDescription||'';customerName=a.name||'';quantity=a.quantity||1;
-    }else{
-      amountCents=typeof a==='number'?a:0;productName=typeof b==='string'?b:'';
-      productDescription=typeof c==='string'?c:'';email='';customerName='';quantity=1;
+    #screen-paywall .logo { width: 120px; margin-bottom: 2rem; }
+    #screen-paywall h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: .75rem; }
+    #screen-paywall p  { font-size: 1rem; opacity: .85; max-width: 400px; margin: 0 auto 2rem; }
+    #screen-paywall .paywall-card {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: var(--radius);
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+      backdrop-filter: blur(8px);
     }
-    if(!email)email=findEmail();
-    if(!customerName)customerName=findName();
-    if(!productName){alert('Product name is required.');return Promise.reject('no_product_name');}
-    if(!amountCents||amountCents<100){alert('Amount must be at least $1.00');return Promise.reject('invalid_amount');}
-    if(!email){alert('Please enter your email address.');return Promise.reject('no_email');}
-    var successBase=window.location.href.split('?')[0];
-    var __pLoc=(document.documentElement.lang||navigator.language||'en');
-    return fetch(apiBase+'/api/landing-pages/public/'+slug+'/payment/checkout',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:email,name:customerName,amountCents:amountCents,productName:productName,productDescription:productDescription,quantity:quantity,locale:__pLoc,successUrl:successBase+'?payment=success&product='+encodeURIComponent(productName)+'&session_id={CHECKOUT_SESSION_ID}',cancelUrl:successBase+'?payment=cancelled'})
-    }).then(function(r){return r.json();}).then(function(d){
-      if(d.checkoutUrl){window.location.href=d.checkoutUrl;}
-      else{alert(d.error||'Failed to process payment');throw new Error(d.error);}
-    });
-  };
-  Object.defineProperty(window,'__processPayment',{value:__realProcessPayment,writable:false,configurable:false});
-  document.addEventListener('DOMContentLoaded',function(){
-    var urlParams=new URLSearchParams(window.location.search);
-    if(urlParams.get('payment')==='success'){
-      var pName=urlParams.get('product')||'your item';
-      var overlay=document.createElement('div');overlay.id='payment-success-overlay';
-      overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999999;font-family:system-ui,-apple-system,sans-serif;';
-      function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-      var subTxt=successSubtext||('Thank you for purchasing '+pName+'.');
-      overlay.innerHTML='<div style="background:white;border-radius:16px;padding:40px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);"><div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><h2 style="margin:0 0 12px;font-size:24px;font-weight:700;color:#111827;">Payment Successful!</h2><p style="margin:0 0 24px;color:#6b7280;font-size:16px;">'+esc(subTxt)+'</p><button id="lp-pay-success-btn" style="padding:12px 32px;font-size:16px;font-weight:600;background:'+successBtnColor+';color:white;border:none;border-radius:8px;cursor:pointer;">'+esc(successBtnLabel)+'</button></div>';
-      document.body.appendChild(overlay);
-      var pBtn=document.getElementById('lp-pay-success-btn');
-      if(pBtn){pBtn.addEventListener('click',function(){if(successRedirect){window.location.href=successRedirect;}else{overlay.remove();window.history.replaceState({},'',window.location.pathname);}});}
+    #paywall-message {
+      font-size: .95rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
     }
-  });
-})();
-</script>  <link rel="stylesheet" href="styles.css">
+    .btn-paywall {
+      display: inline-block;
+      background: var(--teal);
+      color: var(--blue-dk);
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: .85rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-paywall:hover { background: var(--teal-dk); transform: translateY(-1px); }
+
+    /* ════════════════════════════════════════
+       LOADING SCREEN
+    ════════════════════════════════════════ */
+    #screen-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 1.25rem;
+      background: var(--blue);
+      color: #fff;
+    }
+    #screen-loading .logo { width: 100px; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid rgba(255,255,255,.25);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #screen-loading p { font-size: .9rem; opacity: .8; }
+
+    /* ════════════════════════════════════════
+       MAIN APP
+    ════════════════════════════════════════ */
+    #screen-app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── Header ── */
+    .app-header {
+      background: var(--blue);
+      color: #fff;
+      padding: .75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: .75rem; }
+    .header-logo { height: 36px; }
+    .header-title { font-size: .95rem; font-weight: 600; }
+    .header-subtitle { font-size: .75rem; opacity: .75; }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+
+    /* ── Trial banner ── */
+    .trial-banner {
+      background: linear-gradient(90deg, var(--gold) 0%, #FFA000 100%);
+      color: #1A1200;
+      text-align: center;
+      padding: .55rem 1rem;
+      font-size: .82rem;
+      font-weight: 600;
+    }
+    .trial-banner a { color: var(--blue-dk); text-decoration: underline; }
+
+    /* ── Limit bar ── */
+    .limit-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .5rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+    .limit-track {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .limit-fill {
+      height: 100%;
+      background: var(--teal);
+      border-radius: 99px;
+      transition: width .5s ease;
+    }
+    .limit-fill.warn  { background: var(--gold); }
+    .limit-fill.over  { background: var(--red);  }
+
+    /* ── Main layout ── */
+    .app-body {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 0;
+      flex: 1;
+    }
+    @media (max-width: 900px) {
+      .app-body { grid-template-columns: 1fr; }
+      .coach-panel { order: -1; }
+    }
+
+    /* ── Left panel ── */
+    .main-panel {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ── Card base ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+    }
+    .card-title {
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: .85rem;
+    }
+
+    /* ── Mode toggle ── */
+    .mode-toggle {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      width: fit-content;
+    }
+    .mode-btn {
+      padding: .5rem 1.1rem;
+      font-family: 'Poppins', sans-serif;
+      font-size: .82rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .mode-btn.active {
+      background: var(--blue);
+      color: #fff;
+      border-radius: 6px;
+    }
+    .mode-hint {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: .4rem;
+    }
+
+    /* ── Language selector ── */
+    .lang-select {
+      display: flex;
+      gap: .5rem;
+    }
+    .lang-btn {
+      padding: .4rem .9rem;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      border-radius: 6px;
+      font-family: 'Poppins', sans-serif;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .lang-btn.active { border-color: var(--blue); background: var(--blue); color: #fff; }
+
+    /* ── Passage card ── */
+    .passage-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .75rem;
+    }
+    .passage-topic {
+      font-size: .78rem;
+      background: var(--blue);
+      color: #fff;
+      padding: .2rem .65rem;
+      border-radius: 99px;
+      font-weight: 500;
+    }
+    .passage-level {
+      font-size: .75rem;
+      color: var(--muted);
+    }
+    #passage-text {
+      font-size: .95rem;
+      line-height: 1.75;
+      color: var(--text);
+    }
+    #passage-text .word {
+      display: inline;
+      border-radius: 3px;
+      transition: background .15s;
+      cursor: default;
+    }
+    #passage-text .word.good     { background: rgba(76,175,80,.20);  }
+    #passage-text .word.ok       { background: rgba(255,179,0,.20);  }
+    #passage-text .word.bad      { background: rgba(229,57,53,.22);  }
+    #passage-text .word.current  { background: rgba(54,214,181,.30); outline: 1px solid var(--teal); border-radius: 3px; }
+    .btn-new-passage {
+      margin-top: .75rem;
+      font-family: 'Poppins', sans-serif;
+      font-size: .8rem;
+      padding: .4rem .9rem;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all .2s;
+    }
+    .btn-new-passage:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Recorder ── */
+    .recorder-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: .5rem 0;
+    }
+    .mic-btn {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 3px solid var(--blue);
+      background: var(--surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      transition: all .2s;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .mic-btn:hover { background: var(--bg); transform: scale(1.04); }
+    .mic-btn.recording {
+      background: var(--red);
+      border-color: var(--red);
+      animation: pulse-rec 1s ease infinite;
+    }
+    .mic-btn.processing {
+      background: var(--gold);
+      border-color: var(--gold);
+      cursor: not-allowed;
+    }
+    .mic-btn.disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    @keyframes pulse-rec {
+      0%,100% { box-shadow: 0 0 0 0 rgba(229,57,53,.4); }
+      50%      { box-shadow: 0 0 0 12px rgba(229,57,53,0); }
+    }
+    .rec-status {
+      font-size: .85rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .rec-timer {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--red);
+      font-variant-numeric: tabular-nums;
+      display: none;
+    }
+    .rec-timer.visible { display: block; }
+
+    /* ── Scores ── */
+    .scores-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+    }
+    .score-item { display: flex; flex-direction: column; gap: .2rem; }
+    .score-label { font-size: .72rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+    .score-bar-wrap { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .score-bar { height: 100%; border-radius: 99px; background: var(--blue); transition: width .6s ease; }
+    .score-val  { font-size: .9rem; font-weight: 700; }
+    .score-val.great { color: var(--green); }
+    .score-val.ok    { color: var(--gold);  }
+    .score-val.poor  { color: var(--red);   }
+
+    /* Big overall score */
+    .overall-score {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: .75rem;
+    }
+    .overall-circle {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: conic-gradient(var(--teal) 0deg, var(--border) 0deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text);
+      position: relative;
+      transition: background .6s;
+    }
+    .overall-circle::before {
+      content: '';
+      position: absolute;
+      width: 56px; height: 56px;
+      background: var(--surface);
+      border-radius: 50%;
+    }
+    .overall-circle span { position: relative; z-index: 1; }
+    .overall-info p { font-size: .82rem; color: var(--muted); }
+    .overall-info strong { font-size: 1rem; }
+
+    /* Word breakdown */
+    .word-breakdown { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+    .word-chip {
+      font-size: .78rem;
+      padding: .2rem .55rem;
+      border-radius: 99px;
+      font-weight: 500;
+    }
+    .word-chip.good { background: rgba(76,175,80,.15);  color: #2E7D32; }
+    .word-chip.ok   { background: rgba(255,179,0,.15);  color: #B45309; }
+    .word-chip.bad  { background: rgba(229,57,53,.15);  color: #B71C1C; }
+
+    /* ── Retry / Session end CTA ── */
+    .session-cta {
+      display: flex;
+      gap: .75rem;
+      flex-wrap: wrap;
+      margin-top: .5rem;
+    }
+    .btn-retry, .btn-new, .btn-upgrade {
+      font-family: 'Poppins', sans-serif;
+      font-size: .85rem;
+      font-weight: 600;
+      padding: .55rem 1.1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-retry   { background: var(--bg); border: 1.5px solid var(--border); color: var(--text); }
+    .btn-retry:hover { border-color: var(--blue); }
+    .btn-new     { background: var(--blue); color: #fff; }
+    .btn-new:hover { background: var(--blue-dk); }
+    .btn-upgrade { background: var(--teal); color: var(--blue-dk); }
+    .btn-upgrade:hover { background: var(--teal-dk); }
+
+    /* Trial ended overlay */
+    #trial-end-card {
+      background: linear-gradient(135deg, var(--blue-dk), var(--blue));
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+    }
+    #trial-end-card h3 { font-size: 1.2rem; margin-bottom: .5rem; }
+    #trial-end-card p  { font-size: .88rem; opacity: .85; margin-bottom: 1.25rem; }
+
+    /* ── Right coach panel ── */
+    .coach-panel {
+      border-left: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+    }
+    .coach-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .coach-tab {
+      flex: 1;
+      padding: .75rem;
+      font-family: 'Poppins', sans-serif;
+      font-size: .8rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      transition: all .2s;
+    }
+    .coach-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .coach-iframe-wrap {
+      flex: 1;
+      min-height: 500px;
+      position: relative;
+    }
+    .coach-iframe-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      position: absolute;
+      inset: 0;
+    }
+    .coach-exam-msg {
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+    }
+    .coach-exam-msg .exam-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+    .coach-exam-msg p { font-size: .88rem; line-height: 1.6; }
+
+    /* ── Notification toast ── */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--text);
+      color: #fff;
+      padding: .7rem 1.4rem;
+      border-radius: 99px;
+      font-size: .85rem;
+      font-weight: 500;
+      z-index: 9999;
+      transition: transform .3s ease;
+      white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { background: var(--green); }
+    #toast.error   { background: var(--red);   }
+  </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">LTA<span> — Pronunciation Coach</span></div>
-  <div class="lang-toggle">
-    <button class="lang-btn active" onclick="setLang('fr-CA', this)">🇫🇷 Français</button>
-    <button class="lang-btn" onclick="setLang('en-CA', this)">🇨🇦 English</button>
-  </div>
-</header>
-
-<div class="layout">
-
-  <!-- LEFT: Recorder + Scores -->
-  <div class="left-panel">
-
-    <!-- Phrase to practice -->
-    <div class="card phrase-card">
-      <div class="section-label">Phrase to practice</div>
-      <div class="phrase-label">Say this phrase aloud</div>
-      <div class="phrase-text placeholder" id="phraseDisplay">
-        Ask the coach for a phrase to practice →
-      </div>
-      <div class="phrase-hint" id="phraseHint"></div>
-    </div>
-
-    <!-- Recorder -->
-    <div class="card recorder-card">
-      <div class="section-label">Record your pronunciation</div>
-
-      <div class="lang-select-row">
-        <button class="lang-select-btn active" id="btnFR" onclick="setLang('fr-CA', null, this)">🇫🇷 French Canada</button>
-        <button class="lang-select-btn" id="btnEN" onclick="setLang('en-CA', null, this)">🇨🇦 English Canada</button>
-      </div>
-
-      <button class="record-btn" id="recordBtn" onclick="toggleRecording()" title="Click to record">
-        <svg class="mic-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor" class="mic-icon"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-        </svg>
-      </button>
-
-      <div class="waveform" id="waveform">
-        <div class="wave-bar" style="height:8px"></div>
-        <div class="wave-bar" style="height:14px"></div>
-        <div class="wave-bar" style="height:20px"></div>
-        <div class="wave-bar" style="height:26px"></div>
-        <div class="wave-bar" style="height:20px"></div>
-        <div class="wave-bar" style="height:14px"></div>
-        <div class="wave-bar" style="height:8px"></div>
-      </div>
-
-      <div class="record-status" id="recordStatus">Click the mic to start recording</div>
-      <div class="error-msg" id="errorMsg"></div>
-    </div>
-
-    <!-- Score results -->
-    <div class="card score-card" id="scoreCard">
-      <div class="section-label">Your results</div>
-
-      <div class="score-grid">
-        <div class="score-item main">
-          <div class="score-name">Overall pronunciation</div>
-          <div class="score-value main" id="scorePron">—</div>
-          <div class="score-bar-wrap"><div class="score-bar" id="barPron"></div></div>
-        </div>
-        <div class="score-item">
-          <div class="score-name">Accuracy</div>
-          <div class="score-value" id="scoreAcc">—</div>
-          <div class="score-bar-wrap"><div class="score-bar" id="barAcc"></div></div>
-        </div>
-        <div class="score-item">
-          <div class="score-name">Fluency</div>
-          <div class="score-value" id="scoreFlu">—</div>
-          <div class="score-bar-wrap"><div class="score-bar" id="barFlu"></div></div>
-        </div>
-        <div class="score-item">
-          <div class="score-name">Completeness</div>
-          <div class="score-value" id="scoreCom">—</div>
-          <div class="score-bar-wrap"><div class="score-bar" id="barCom"></div></div>
-        </div>
-        <div class="score-item">
-          <div class="score-name">Prosody</div>
-          <div class="score-value" id="scorePro">—</div>
-          <div class="score-bar-wrap"><div class="score-bar" id="barPro"></div></div>
-        </div>
-      </div>
-
-      <div class="feedback-text" id="feedbackText"></div>
-
-      <div class="section-label" style="margin-top:1rem">Word breakdown</div>
-      <div class="words-wrap" id="wordsWrap"></div>
-
-      <button class="try-again-btn" onclick="resetRecorder()">↺ Try again with the same phrase</button>
-    </div>
-
-  </div>
-
-  <!-- RIGHT: Chat coach -->
-  <div class="chat-panel">
-    <div class="section-label">Your coach</div>
-    <div class="chat-iframe-wrap">
-      <iframe id="coachIframe"
-        src="https://app.paygogpt.com/agents/63330083/embed"
-        allow="microphone"
-        title="LTA Pronunciation Coach">
-      </iframe>
-    </div>
-  </div>
-
+<!-- ════════ LOADING SCREEN ════════ -->
+<div id="screen-loading">
+  <img class="logo" src="https://academielta.s3.us-east-1.amazonaws.com/LTA_no_BG_transparent_PNG.png" alt="Académie LTA" />
+  <div class="spinner"></div>
+  <p id="loading-msg">Vérification de votre accès…</p>
 </div>
 
+<!-- ════════ PAYWALL SCREEN ════════ -->
+<div id="screen-paywall" class="hidden">
+  <img class="logo" src="https://academielta.s3.us-east-1.amazonaws.com/LTA_no_BG_transparent_PNG.png" alt="Académie LTA" />
+  <h1>Coach de Prononciation</h1>
+  <p>Accès réservé aux étudiants inscrits à Académie LTA.</p>
+  <div class="paywall-card">
+    <p id="paywall-message">Un lien d'accès valide est requis. Veuillez utiliser le lien reçu par courriel après votre inscription.</p>
+    <a href="https://app.paygogpt.com/p/e6x2M5FVy" class="btn-paywall">Commencer la formation →</a>
+  </div>
+</div>
+
+<!-- ════════ MAIN APP SCREEN ════════ -->
+<div id="screen-app" class="hidden">
+
+  <!-- Trial banner (shown for trial tokens) -->
+  <div id="trial-banner" class="trial-banner hidden">
+    🎁 Essai gratuit : <span id="trial-remaining"></span> min restantes —
+    <a href="https://app.paygogpt.com/p/e6x2M5FVy">Accéder à la formation complète →</a>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <img class="header-logo" src="https://academielta.s3.us-east-1.amazonaws.com/LTA_no_BG_transparent_PNG.png" alt="LTA" />
+      <div>
+        <div class="header-title">Coach de Prononciation</div>
+        <div class="header-subtitle" id="header-subtitle">Chargement…</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="btn-exam-mode"    onclick="setMode('exam')">🎯 Examen</button>
+        <button class="mode-btn"        id="btn-coaching-mode" onclick="setMode('coaching')">💬 Coaching</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Daily limit bar -->
+  <div class="limit-bar" id="limit-bar">
+    <span id="limit-label">0 / 0 min utilisées</span>
+    <div class="limit-track"><div class="limit-fill" id="limit-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- LEFT: practice area -->
+    <main class="main-panel">
+
+      <!-- Language + Settings -->
+      <div class="card">
+        <div class="card-title">Langue de pratique</div>
+        <div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+          <div class="lang-select">
+            <button class="lang-btn active" id="btn-fr" onclick="setLang('fr-CA')">🇫🇷 Français (CA)</button>
+            <button class="lang-btn"        id="btn-en" onclick="setLang('en-CA')">🇨🇦 English (CA)</button>
+          </div>
+          <div>
+            <div class="mode-hint" id="mode-hint-text">Mode Examen : silence total, scores uniquement.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Passage -->
+      <div class="card" id="passage-card">
+        <div class="passage-header">
+          <div>
+            <div class="card-title" style="margin-bottom:.25rem;">Texte à lire</div>
+            <span class="passage-topic" id="passage-topic-badge">—</span>
+          </div>
+          <span class="passage-level" id="passage-level-badge">Niveau —</span>
+        </div>
+        <div id="passage-text">Chargement du texte…</div>
+        <button class="btn-new-passage" onclick="loadPassage()">↺ Nouveau texte</button>
+      </div>
+
+      <!-- Recorder -->
+      <div class="card">
+        <div class="card-title">Enregistrement</div>
+        <div class="recorder-area">
+          <button class="mic-btn" id="mic-btn" onclick="toggleRecording()" title="Démarrer / Arrêter l'enregistrement">
+            🎙️
+          </button>
+          <div class="rec-timer" id="rec-timer">0:00</div>
+          <div class="rec-status" id="rec-status">Cliquez sur le micro pour commencer</div>
+        </div>
+      </div>
+
+      <!-- Scores -->
+      <div class="card" id="scores-card">
+        <div class="card-title">Résultats</div>
+
+        <!-- Overall -->
+        <div class="overall-score">
+          <div class="overall-circle" id="overall-circle">
+            <span id="overall-val">—</span>
+          </div>
+          <div class="overall-info">
+            <strong id="overall-label">Prononciation globale</strong>
+            <p id="overall-feedback">Enregistrez-vous pour obtenir votre score.</p>
+          </div>
+        </div>
+
+        <!-- Sub-scores -->
+        <div class="scores-grid" id="sub-scores-grid">
+          <div class="score-item">
+            <span class="score-label">Précision</span>
+            <div class="score-bar-wrap"><div class="score-bar" id="bar-accuracy" style="width:0%"></div></div>
+            <span class="score-val" id="val-accuracy">—</span>
+          </div>
+          <div class="score-item">
+            <span class="score-label">Fluidité</span>
+            <div class="score-bar-wrap"><div class="score-bar" id="bar-fluency"  style="width:0%"></div></div>
+            <span class="score-val" id="val-fluency">—</span>
+          </div>
+          <div class="score-item">
+            <span class="score-label">Complétude</span>
+            <div class="score-bar-wrap"><div class="score-bar" id="bar-completeness" style="width:0%"></div></div>
+            <span class="score-val" id="val-completeness">—</span>
+          </div>
+          <div class="score-item">
+            <span class="score-label">Prosodie</span>
+            <div class="score-bar-wrap"><div class="score-bar" id="bar-prosody"  style="width:0%"></div></div>
+            <span class="score-val" id="val-prosody">—</span>
+          </div>
+        </div>
+
+        <!-- Word breakdown -->
+        <div style="margin-top:1rem;">
+          <div class="card-title">Détail par mot</div>
+          <div class="word-breakdown" id="word-breakdown">
+            <span style="font-size:.82rem; color:var(--muted);">Les résultats apparaîtront ici après l'enregistrement.</span>
+          </div>
+        </div>
+
+        <!-- Session CTAs (hidden until result) -->
+        <div class="session-cta hidden" id="session-cta">
+          <button class="btn-retry" onclick="retryPassage()">↺ Même texte</button>
+          <button class="btn-new"   onclick="loadPassage()">→ Nouveau texte</button>
+        </div>
+
+        <!-- Trial ended card -->
+        <div id="trial-end-card" class="hidden">
+          <div style="font-size:2rem; margin-bottom:.5rem;">🎓</div>
+          <h3>Votre essai est terminé</h3>
+          <p>Accédez à la formation complète pour continuer à vous entraîner sans limite.</p>
+          <a href="https://app.paygogpt.com/p/e6x2M5FVy" class="btn-paywall" style="display:inline-block; margin-top:.5rem;">
+            Obtenir l'accès complet →
+          </a>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- RIGHT: coach panel -->
+    <aside class="coach-panel">
+      <div class="coach-tabs">
+        <button class="coach-tab active" id="tab-fr" onclick="setCoachLang('fr')">🇫🇷 Coach FR</button>
+        <button class="coach-tab"        id="tab-en" onclick="setCoachLang('en')">🇨🇦 Coach EN</button>
+      </div>
+      <div class="coach-iframe-wrap" id="coach-iframe-wrap">
+        <!-- iframes injected by JS to avoid early loading -->
+      </div>
+      <div class="coach-exam-msg hidden" id="coach-exam-msg">
+        <div class="exam-icon">🎯</div>
+        <p>Le mode Examen simule les conditions réelles de l'OQLF.<br/>Le coach est désactivé. Entraînez-vous en silence.</p>
+      </div>
+    </aside>
+
+  </div><!-- /app-body -->
+</div><!-- /screen-app -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
 <script>
-  const API_URL = 'https://pronunciation-api-l0pg.onrender.com/assess';
-  const AGENTS = {
-    'fr-CA': 'https://app.paygogpt.com/agents/63330083/embed',
-    'en-CA': 'https://app.paygogpt.com/agents/38837089/embed'
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════════════ */
+const VERCEL_BASE   = 'https://academie-lta-webhook.vercel.app';
+const RENDER_BASE   = 'https://pronunciation-api-l0pg.onrender.com';
+const FUNNEL_URL    = 'https://app.paygogpt.com/p/e6x2M5FVy';
+
+const COACH_AGENTS  = {
+  fr: 'https://app.paygogpt.com/agents/63330083/embed',
+  en: 'https://app.paygogpt.com/agents/38837089/embed'
+};
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+let state = {
+  token:          null,
+  profile:        null,     // from verify-token
+  mode:           'exam',   // 'exam' | 'coaching'
+  lang:           'fr-CA',
+  coachLang:      'fr',
+  passage:        null,     // { passage, topic, level, order, language }
+  sessionStart:   null,
+  sessionDuration: 0,       // minutes used this session
+  sessionNumber:  0,
+  mediaRecorder:  null,
+  audioChunks:    [],
+  isRecording:    false,
+  isProcessing:   false,
+  recTimerInterval: null,
+  recSeconds:     0,
+  lastScores:     null,
+  trialExpended:  false,
+};
+
+/* ═══════════════════════════════════════════════════════════
+   BOOT — read token from URL, verify, then show app
+═══════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+
+  if (!token) {
+    showPaywall('Aucun jeton d\'accès trouvé. Utilisez le lien reçu par courriel.');
+    return;
+  }
+
+  state.token = token;
+  setLoadingMsg('Vérification de votre accès…');
+
+  let profile;
+  try {
+    profile = await verifyToken(token);
+  } catch (err) {
+    showPaywall('Impossible de vérifier votre accès. Vérifiez votre connexion et réessayez.');
+    return;
+  }
+
+  if (!profile || !profile.valid) {
+    const reason = profile?.reason || 'Accès invalide.';
+    showPaywall(paywall_reason_fr(reason));
+    return;
+  }
+
+  state.profile = profile;
+  await bootApp();
+});
+
+function paywall_reason_fr(reason) {
+  const map = {
+    'expired':      'Votre accès a expiré. Veuillez renouveler votre abonnement.',
+    'limit_reached':'Vous avez atteint votre limite quotidienne. Revenez demain ou passez à un forfait supérieur.',
+    'invalid':      'Ce lien d\'accès n\'est pas valide. Vérifiez votre courriel d\'inscription.',
+    'not_found':    'Ce lien d\'accès n\'est pas reconnu. Vérifiez votre courriel d\'inscription.',
   };
-  const PHRASES = {
-    'fr-CA': [
-      { text: 'Bonjour, comment allez-vous aujourd\'hui?', hint: 'Focus on the nasal vowels: "on", "ou"' },
-      { text: 'Je voudrais un café, s\'il vous plaît.', hint: 'The Québec "r" is uvular - from the back of the throat' },
-      { text: 'Il fait beau temps ce matin.', hint: 'Link "il" and "fait" naturally - "i-fait"' },
-      { text: 'O\u00f9 est la station de m\u00e9tro la plus proche?', hint: 'Watch the liaison on "les" before vowels' },
-      { text: 'J\'habite \u00e0 Montr\u00e9al depuis cinq ans.', hint: 'Silent "h" in "habite" - no pause before it' }
-    ],
-    'en-CA': [
-      { text: 'About the house - the lights are out.', hint: 'Canadian raising: "about" and "out" vowels shift before voiceless consonants' },
-      { text: 'Sorry, I didn\'t catch that, eh?', hint: '"Sorry" rhymes with "story" in Canadian English' },
-      { text: 'The weather in Toronto is quite cold today.', hint: 'Flap the "t" in "Toronto" - sounds like a soft "d"' },
-      { text: 'Can you pass me a double-double, please?', hint: 'Natural linking: "double-double" flows as one unit' },
-      { text: 'We\'re going to the cottage this weekend.', hint: '"Going to" often reduces to "gonna" in natural speech' }
-    ]
-  };
+  return map[reason] || 'Accès non autorisé. Utilisez le lien reçu par courriel.';
+}
 
-  let currentLang = 'fr-CA';
-  let currentPhrase = null;
-  let mediaRecorder = null;
-  let audioChunks = [];
-  let isRecording = false;
+/* ═══════════════════════════════════════════════════════════
+   VERIFY TOKEN
+═══════════════════════════════════════════════════════════ */
+async function verifyToken(token) {
+  const res = await fetch(`${VERCEL_BASE}/api/verify-token?token=${encodeURIComponent(token)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 
-  setRandomPhrase();
+/* ═══════════════════════════════════════════════════════════
+   BOOT APP — set up UI from profile
+═══════════════════════════════════════════════════════════ */
+async function bootApp() {
+  const p = state.profile;
 
-  function setLang(lang, headerBtn, cardBtn) {
-    currentLang = lang;
-    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-    if (headerBtn) headerBtn.classList.add('active');
-    document.querySelectorAll('.lang-select-btn').forEach(b => b.classList.remove('active'));
-    if (cardBtn) cardBtn.classList.add('active');
-    else document.getElementById(lang === 'fr-CA' ? 'btnFR' : 'btnEN').classList.add('active');
-    document.querySelectorAll('.lang-btn').forEach(b => {
-      if ((lang === 'fr-CA' && b.textContent.includes('Fran')) ||
-          (lang === 'en-CA' && b.textContent.includes('Engl'))) b.classList.add('active');
-    });
-    document.getElementById('coachIframe').src = AGENTS[lang];
-    setRandomPhrase();
-    resetRecorder();
+  // Header subtitle
+  const orderLabel = p.professional_order || 'Professionnel';
+  const nameLabel  = p.name ? ` — ${p.name}` : '';
+  el('header-subtitle').textContent = `${orderLabel}${nameLabel}`;
+
+  // Trial banner
+  if (p.token_type === 'trial') {
+    const remaining = Math.max(0, (p.daily_limit_minutes || 10) - (p.minutes_used_today || 0));
+    el('trial-remaining').textContent = remaining;
+    show('trial-banner');
   }
 
-  function setRandomPhrase() {
-    const list = PHRASES[currentLang];
-    const phrase = list[Math.floor(Math.random() * list.length)];
-    currentPhrase = phrase.text;
-    const el = document.getElementById('phraseDisplay');
-    el.textContent = phrase.text;
-    el.classList.remove('placeholder');
-    document.getElementById('phraseHint').textContent = '\u1f4a1 ' + phrase.hint;
+  // Limit bar
+  updateLimitBar();
+
+  // Trial expended?
+  if (p.token_type === 'trial' && (p.sessions_used || 0) >= 1) {
+    state.trialExpended = true;
+    showTrialEndCard();
   }
 
-  async function toggleRecording() {
-    if (isRecording) stopRecording();
-    else await startRecording();
+  // Pre-select language from profile order (default fr-CA)
+  state.lang = 'fr-CA';
+
+  // Show app
+  show('screen-app');
+  hide('screen-loading');
+
+  // Load coach iframes
+  loadCoachIframes();
+
+  // Load first passage
+  await loadPassage();
+
+  // Apply mode
+  setMode('exam');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIMIT BAR
+═══════════════════════════════════════════════════════════ */
+function updateLimitBar() {
+  const p = state.profile;
+  if (!p) return;
+
+  // Unlimited test tokens
+  if (p.is_test) {
+    el('limit-label').textContent = '∞ Accès illimité (test)';
+    el('limit-fill').style.width = '0%';
+    return;
   }
 
-  async function startRecording() {
-    hideError();
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunks = [];
-      mediaRecorder = new MediaRecorder(stream, { mimeType: getMimeType() });
-      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-      mediaRecorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); processAudio(); };
-      mediaRecorder.start(100);
-      isRecording = true;
-      document.getElementById('recordBtn').classList.add('recording');
-      document.getElementById('waveform').classList.add('visible');
-      setStatus('Recording... click again to stop', 'active');
-    } catch (err) {
-      showError(err.name === 'NotAllowedError' ? 'Microphone access denied. Please allow and try again.' : 'Could not start recording: ' + err.message);
+  const limit = p.daily_limit_minutes || 30;
+  const used  = p.minutes_used_today  || 0;
+  const pct   = Math.min(100, (used / limit) * 100);
+
+  el('limit-label').textContent = `${used} / ${limit} min utilisées aujourd'hui`;
+  const fill = el('limit-fill');
+  fill.style.width = `${pct}%`;
+  fill.className   = 'limit-fill' + (pct >= 100 ? ' over' : pct >= 75 ? ' warn' : '');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOAD PASSAGE
+═══════════════════════════════════════════════════════════ */
+async function loadPassage() {
+  const p     = state.profile;
+  const order = p?.professional_order || 'General';
+  const lang  = state.lang;
+
+  el('passage-text').textContent = 'Chargement…';
+  el('passage-topic-badge').textContent = '—';
+  el('passage-level-badge').textContent = 'Niveau —';
+  resetScores();
+  hide('session-cta');
+  hide('trial-end-card');
+
+  try {
+    const url = `${VERCEL_BASE}/api/reading-material?order=${encodeURIComponent(order)}&language=${lang}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    state.passage = data;
+    renderPassage(data);
+  } catch (err) {
+    el('passage-text').textContent = 'Impossible de charger le texte. Vérifiez votre connexion.';
+    toast('Erreur lors du chargement du texte.', 'error');
+  }
+}
+
+function renderPassage(data) {
+  el('passage-topic-badge').textContent = data.topic || 'Général';
+  el('passage-level-badge').textContent = `Niveau ${data.level || 'B2'}`;
+
+  // Wrap each word in a span for per-word highlighting after scoring
+  const words = (data.passage || '').split(' ');
+  const html  = words.map((w, i) =>
+    `<span class="word" data-idx="${i}" data-word="${w.replace(/[^a-zA-ZÀ-ÿ]/g,'')}">${w}</span>`
+  ).join(' ');
+  el('passage-text').innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RECORDING
+═══════════════════════════════════════════════════════════ */
+async function toggleRecording() {
+  if (state.isProcessing) return;
+
+  // Trial ended — block
+  if (state.trialExpended) {
+    showTrialEndCard();
+    toast('Votre essai est terminé. Accédez à la formation complète.', 'error');
+    return;
+  }
+
+  // Daily limit check
+  if (!state.profile?.is_test) {
+    const limit = state.profile?.daily_limit_minutes || 30;
+    const used  = state.profile?.minutes_used_today  || 0;
+    if (used >= limit) {
+      toast('Limite quotidienne atteinte. Revenez demain.', 'error');
+      return;
     }
   }
 
-  function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-    isRecording = false;
-    document.getElementById('recordBtn').classList.remove('recording');
-    document.getElementById('waveform').classList.remove('visible');
-    setStatus('Processing...', 'processing');
+  if (!state.isRecording) {
+    await startRecording();
+  } else {
+    stopRecording();
   }
+}
 
-  function getMimeType() {
-    for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'])
-      if (MediaRecorder.isTypeSupported(t)) return t;
-    return '';
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.audioChunks   = [];
+    state.mediaRecorder = new MediaRecorder(stream);
+    state.sessionStart  = Date.now();
+    state.recSeconds    = 0;
+
+    state.mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) state.audioChunks.push(e.data);
+    };
+
+    state.mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      await processRecording();
+    };
+
+    state.mediaRecorder.start(250);
+    state.isRecording = true;
+
+    el('mic-btn').className = 'mic-btn recording';
+    el('mic-btn').textContent = '⏹️';
+    el('rec-timer').classList.add('visible');
+    el('rec-status').textContent = 'Enregistrement… Cliquez pour arrêter.';
+
+    state.recTimerInterval = setInterval(() => {
+      state.recSeconds++;
+      const m = Math.floor(state.recSeconds / 60);
+      const s = state.recSeconds % 60;
+      el('rec-timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }, 1000);
+
+  } catch (err) {
+    toast('Microphone non accessible. Vérifiez les permissions.', 'error');
   }
+}
 
-  async function processAudio() {
-    try {
-      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-      const buf = await blob.arrayBuffer();
-      // Chunked base64 - avoids call stack overflow on large audio
-      const bytes = new Uint8Array(buf);
-      let binary = '';
-      const CHUNK = 8192;
-      for (let i = 0; i < bytes.length; i += CHUNK)
-        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-      const b64 = btoa(binary);
+function stopRecording() {
+  if (state.mediaRecorder && state.isRecording) {
+    state.isRecording = false;
+    clearInterval(state.recTimerInterval);
+    state.mediaRecorder.stop();
 
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'audio', reference_text: currentPhrase, locale: currentLang, audio_base64: b64 })
-      });
-      if (!res.ok) throw new Error('API error ' + res.status);
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Assessment failed');
-      showScores(data);
-      setStatus('Assessment complete \u2713', '');
-    } catch (err) {
-      setStatus('Click the mic to start recording', '');
-      showError('Assessment failed: ' + err.message);
-    }
+    el('mic-btn').className   = 'mic-btn processing';
+    el('mic-btn').textContent = '⏳';
+    el('rec-status').textContent = 'Analyse en cours…';
+    state.isProcessing = true;
   }
+}
 
-  function showScores(data) {
-    const card = document.getElementById('scoreCard');
-    card.classList.add('visible');
-    setScore('Pron', data.pronunciation_score);
-    setScore('Acc', data.accuracy_score);
-    setScore('Flu', data.fluency_score);
-    setScore('Com', data.completeness_score);
-    setScore('Pro', data.prosody_score);
-    document.getElementById('feedbackText').textContent = data.feedback || '';
-    const wrap = document.getElementById('wordsWrap');
-    wrap.innerHTML = '';
-    (data.words || []).forEach(w => {
-      const s = w.accuracy || 0;
-      const cls = s >= 80 ? 'good' : s >= 60 ? 'ok' : 'poor';
-      const chip = document.createElement('div');
-      chip.className = 'word-chip ' + cls;
-      chip.innerHTML = '<span>' + w.word + '</span><span class="w-score">' + Math.round(s) + '</span>';
-      wrap.appendChild(chip);
+/* ═══════════════════════════════════════════════════════════
+   PROCESS RECORDING → Render API → Display Scores
+═══════════════════════════════════════════════════════════ */
+async function processRecording() {
+  const durationSec = state.recSeconds;
+  const durationMin = durationSec / 60;
+
+  // Build blob and base64
+  const blob       = new Blob(state.audioChunks, { type: 'audio/webm' });
+  const base64Audio = await blobToBase64Chunked(blob);
+  const passage     = state.passage?.passage || '';
+  const lang        = state.lang;
+
+  try {
+    const payload = {
+      audio:     base64Audio,
+      text:      passage,
+      language:  lang,
+      mode:      state.mode,
+    };
+
+    const res = await fetch(`${RENDER_BASE}/assess`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
     });
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
 
-  function setScore(key, val) {
-    const v = Math.round(val || 0);
-    const c = v >= 80 ? 'var(--teal)' : v >= 60 ? 'var(--warn)' : 'var(--danger)';
-    document.getElementById('score' + key).textContent = v;
-    document.getElementById('score' + key).style.color = c;
-    setTimeout(() => {
-      document.getElementById('bar' + key).style.width = v + '%';
-      document.getElementById('bar' + key).style.background = c;
-    }, 100);
-  }
+    if (!res.ok) throw new Error(`Render API ${res.status}`);
+    const scores = await res.json();
+    state.lastScores = scores;
 
-  function resetRecorder() {
-    document.getElementById('scoreCard').classList.remove('visible');
-    document.getElementById('waveform').classList.remove('visible');
-    setStatus('Click the mic to start recording', '');
-    hideError();
-    setRandomPhrase();
-  }
+    displayScores(scores);
+    state.sessionNumber++;
 
-  function setStatus(msg, type) {
-    const el = document.getElementById('recordStatus');
-    el.textContent = msg;
-    el.className = 'record-status' + (type ? ' ' + type : '');
-  }
+    // Log session (async, don't block UI)
+    logSession(durationMin, scores).catch(console.warn);
 
-  function showError(msg) {
-    const el = document.getElementById('errorMsg');
-    el.textContent = msg;
-    el.classList.add('visible');
-  }
+    // Update used minutes in local state
+    if (!state.profile.is_test) {
+      state.profile.minutes_used_today = (state.profile.minutes_used_today || 0) + durationMin;
+      updateLimitBar();
+    }
 
-  function hideError() {
-    document.getElementById('errorMsg').classList.remove('visible');
+    // Trial: mark as expended after first session
+    if (state.profile.token_type === 'trial') {
+      state.trialExpended = true;
+      // Show end card after a brief delay so scores are visible first
+      setTimeout(showTrialEndCard, 2500);
+    }
+
+  } catch (err) {
+    toast('Erreur lors de l\'analyse. Réessayez.', 'error');
+    console.error(err);
+  } finally {
+    state.isProcessing = false;
+    el('mic-btn').className   = 'mic-btn';
+    el('mic-btn').textContent = '🎙️';
+    el('rec-timer').classList.remove('visible');
+    el('rec-status').textContent = 'Cliquez sur le micro pour recommencer';
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DISPLAY SCORES
+═══════════════════════════════════════════════════════════ */
+function displayScores(scores) {
+  const overall   = Math.round(scores.pronunciation_score   || scores.overall || 0);
+  const accuracy  = Math.round(scores.accuracy_score        || 0);
+  const fluency   = Math.round(scores.fluency_score         || 0);
+  const complete  = Math.round(scores.completeness_score    || 0);
+  const prosody   = Math.round(scores.prosody_score         || 0);
+
+  // Overall circle
+  const deg = (overall / 100) * 360;
+  el('overall-circle').style.background =
+    `conic-gradient(${scoreColor(overall)} ${deg}deg, var(--border) ${deg}deg)`;
+  el('overall-val').textContent = overall;
+  el('overall-feedback').textContent = scoreFeedback(overall);
+
+  // Sub bars
+  setScore('accuracy',    accuracy);
+  setScore('fluency',     fluency);
+  setScore('completeness',complete);
+  setScore('prosody',     prosody);
+
+  // Per-word highlight
+  const words = scores.words || [];
+  highlightWords(words);
+  buildWordChips(words);
+
+  // Show CTAs
+  show('session-cta');
+}
+
+function setScore(key, val) {
+  el(`bar-${key}`).style.width = `${val}%`;
+  const v = el(`val-${key}`);
+  v.textContent = val;
+  v.className   = `score-val ${val >= 80 ? 'great' : val >= 60 ? 'ok' : 'poor'}`;
+}
+
+function scoreColor(v) {
+  if (v >= 80) return 'var(--green)';
+  if (v >= 60) return 'var(--gold)';
+  return 'var(--red)';
+}
+
+function scoreFeedback(v) {
+  if (v >= 90) return 'Excellent ! Prononciation quasi native.';
+  if (v >= 80) return 'Très bien ! Quelques petits ajustements.';
+  if (v >= 65) return 'Bien. Continuez à pratiquer les mots difficiles.';
+  if (v >= 50) return 'En progrès. Portez attention aux sons du français.';
+  return 'À améliorer. Écoutez les passages à voix haute avant d\'enregistrer.';
+}
+
+function highlightWords(wordData) {
+  const spans = el('passage-text').querySelectorAll('.word');
+  spans.forEach(span => {
+    span.className = 'word';
+    const w = span.dataset.word?.toLowerCase();
+    if (!w) return;
+    const match = wordData.find(wd =>
+      (wd.word || '').toLowerCase().replace(/[^a-zA-ZÀ-ÿ]/g,'') === w
+    );
+    if (!match) return;
+    const score = match.accuracy_score ?? match.score ?? 0;
+    span.classList.add(score >= 80 ? 'good' : score >= 60 ? 'ok' : 'bad');
+    span.title = `${match.word}: ${Math.round(score)}%`;
+  });
+}
+
+function buildWordChips(wordData) {
+  const wrap = el('word-breakdown');
+  if (!wordData || wordData.length === 0) {
+    wrap.innerHTML = '<span style="font-size:.82rem;color:var(--muted)">Aucun détail disponible.</span>';
+    return;
+  }
+  wrap.innerHTML = wordData.map(w => {
+    const score = w.accuracy_score ?? w.score ?? 0;
+    const cls   = score >= 80 ? 'good' : score >= 60 ? 'ok' : 'bad';
+    return `<span class="word-chip ${cls}">${w.word} ${Math.round(score)}%</span>`;
+  }).join('');
+}
+
+function resetScores() {
+  el('overall-circle').style.background =
+    `conic-gradient(var(--teal) 0deg, var(--border) 0deg)`;
+  el('overall-val').textContent      = '—';
+  el('overall-feedback').textContent = 'Enregistrez-vous pour obtenir votre score.';
+  ['accuracy','fluency','completeness','prosody'].forEach(k => {
+    el(`bar-${k}`).style.width = '0%';
+    el(`val-${k}`).textContent = '—';
+    el(`val-${k}`).className   = 'score-val';
+  });
+  el('word-breakdown').innerHTML =
+    '<span style="font-size:.82rem;color:var(--muted)">Les résultats apparaîtront ici après l\'enregistrement.</span>';
+  el('passage-text').querySelectorAll('.word')
+    .forEach(s => s.className = 'word');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOG SESSION
+═══════════════════════════════════════════════════════════ */
+async function logSession(durationMin, scores) {
+  if (!state.token || !state.passage) return;
+
+  const p = state.profile;
+  const payload = {
+    token:            state.token,
+    email:            p.email            || '',
+    name:             p.name             || '',
+    professional_order: p.professional_order || '',
+    session_type:     state.mode === 'exam' ? 'Exam' : 'Coaching',
+    mode:             state.mode,
+    exercise_type:    'Reading aloud',
+    duration_minutes: durationMin,
+    avg_score:        scores.pronunciation_score || scores.overall || 0,
+    accuracy:         scores.accuracy_score      || 0,
+    fluency:          scores.fluency_score        || 0,
+    prosody:          scores.prosody_score        || 0,
+    completeness:     scores.completeness_score   || 0,
+    passage_used:     state.passage.passage?.substring(0, 200) || '',
+    weak_words:       getWeakWords(scores.words),
+    session_number:   state.sessionNumber,
+    is_trial:         p.token_type === 'trial',
+  };
+
+  const res = await fetch(`${VERCEL_BASE}/api/log-session`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error(`log-session ${res.status}`);
+}
+
+function getWeakWords(wordData) {
+  if (!wordData) return '';
+  return wordData
+    .filter(w => (w.accuracy_score ?? w.score ?? 100) < 60)
+    .map(w => w.word)
+    .join(', ');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODE & LANGUAGE SWITCHES
+═══════════════════════════════════════════════════════════ */
+function setMode(mode) {
+  state.mode = mode;
+
+  el('btn-exam-mode').classList.toggle('active',    mode === 'exam');
+  el('btn-coaching-mode').classList.toggle('active', mode === 'coaching');
+
+  const hintEl = el('mode-hint-text');
+  if (mode === 'exam') {
+    hintEl.textContent = 'Mode Examen : silence total, scores uniquement.';
+    // Hide coach iframe, show exam msg
+    el('coach-iframe-wrap').classList.add('hidden');
+    el('coach-exam-msg').classList.remove('hidden');
+  } else {
+    hintEl.textContent = 'Mode Coaching : le coach analyse vos scores et vous guide.';
+    el('coach-iframe-wrap').classList.remove('hidden');
+    el('coach-exam-msg').classList.add('hidden');
+  }
+}
+
+function setLang(lang) {
+  state.lang = lang;
+  el('btn-fr').classList.toggle('active', lang === 'fr-CA');
+  el('btn-en').classList.toggle('active', lang === 'en-CA');
+  loadPassage();
+}
+
+function setCoachLang(lang) {
+  state.coachLang = lang;
+  el('tab-fr').classList.toggle('active', lang === 'fr');
+  el('tab-en').classList.toggle('active', lang === 'en');
+  updateCoachIframe();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COACH IFRAMES
+═══════════════════════════════════════════════════════════ */
+function loadCoachIframes() {
+  const wrap = el('coach-iframe-wrap');
+  // Create both iframes, only show active one
+  ['fr','en'].forEach(lang => {
+    const iframe = document.createElement('iframe');
+    iframe.id    = `iframe-coach-${lang}`;
+    iframe.src   = COACH_AGENTS[lang];
+    iframe.allow = 'microphone';
+    iframe.style.display = lang === 'fr' ? 'block' : 'none';
+    iframe.style.position = 'absolute';
+    iframe.style.inset = '0';
+    iframe.style.width  = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    wrap.appendChild(iframe);
+  });
+}
+
+function updateCoachIframe() {
+  ['fr','en'].forEach(lang => {
+    const iframe = el(`iframe-coach-${lang}`);
+    if (iframe) iframe.style.display = lang === state.coachLang ? 'block' : 'none';
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RETRY
+═══════════════════════════════════════════════════════════ */
+function retryPassage() {
+  resetScores();
+  hide('session-cta');
+  el('rec-status').textContent = 'Cliquez sur le micro pour recommencer';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TRIAL END CARD
+═══════════════════════════════════════════════════════════ */
+function showTrialEndCard() {
+  show('trial-end-card');
+  hide('session-cta');
+  el('mic-btn').classList.add('disabled');
+  el('rec-status').textContent = 'Essai terminé. Obtenez l\'accès complet pour continuer.';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN HELPERS
+═══════════════════════════════════════════════════════════ */
+function showPaywall(msg) {
+  el('paywall-message').textContent = msg;
+  show('screen-paywall');
+  hide('screen-loading');
+  hide('screen-app');
+}
+
+function setLoadingMsg(msg) {
+  el('loading-msg').textContent = msg;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BASE64 CHUNKED (matches Render API expectation)
+═══════════════════════════════════════════════════════════ */
+function blobToBase64Chunked(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const b64 = reader.result.split(',')[1];
+      // Chunk at 8192 chars to match server expectation
+      const chunks = [];
+      for (let i = 0; i < b64.length; i += 8192) {
+        chunks.push(b64.slice(i, i + 8192));
+      }
+      resolve(chunks.join(''));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════ */
+function toast(msg, type = '') {
+  const t = el('toast');
+  t.textContent = msg;
+  t.className   = `show ${type}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 3500);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DOM UTILS
+═══════════════════════════════════════════════════════════ */
+function el(id)      { return document.getElementById(id); }
+function show(id)    { el(id)?.classList.remove('hidden'); }
+function hide(id)    { el(id)?.classList.add('hidden');    }
 </script>
-
 </body>
 </html>
