@@ -881,8 +881,9 @@ async function loadPassage() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    state.passage = data;
-    renderPassage(data);
+    const passage = (data.passages && data.passages[0]) || data;
+    state.passage = passage;
+    renderPassage(passage);
   } catch (err) {
     el('passage-text').textContent = 'Impossible de charger le texte. Vérifiez votre connexion.';
     toast('Erreur lors du chargement du texte.', 'error');
