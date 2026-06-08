@@ -353,22 +353,35 @@ def assess():
     if not reference_text:
         return jsonify({"success": False, "error": "reference_text is required"}), 400
 
-    if audio_base64:
+   if audio_base64:
         try: raw = base64.b64decode(audio_base64)
         except Exception:
             return jsonify({"success": False, "error": "Invalid audio_base64"}), 400
 
         suffix = detect_audio_suffix(raw)
+        magic  = raw[:8].hex()
+        size   = len(raw)
+        print(f"[DEBUG] audio received: {size} bytes, magic={magic}, detected suffix={suffix}")
+
         if suffix is None:
-            # Already WAV — send directly
+            print(f"[DEBUG] Already WAV — sending directly")
             return jsonify(format_response(call_azure(raw, reference_text, language), mode="audio"))
 
         wav, err = convert_to_wav(raw, suffix)
         if not wav:
-            # Log the error but try sending raw anyway
-            print(f"ffmpeg conversion failed ({suffix}): {err}")
-            return jsonify(format_response(call_azure(raw, reference_text, language), mode="audio"))
-        return jsonify(format_response(call_azure(wav, reference_text, language), mode="audio"))
+            print(f"[DEBUG] ffmpeg FAILED ({suffix}): {err}")
+            azure_result = call_azure(raw, reference_text, language)
+            result = format_response(azure_result, mode="audio")
+            result['debug'] = f"ffmpeg failed: {err[:200]}"
+            return jsonify(result)
+
+        print(f"[DEBUG] WAV converted: {len(wav)} bytes — sending to Azure")
+        azure_result = call_azure(wav, reference_text, language)
+        print(f"[DEBUG] Azure response: {str(azure_result)[:300]}")
+        result = format_response(azure_result, mode="audio")
+        result['debug_azure'] = str(azure_result.get('data', ''))[:500]
+        return jsonify(result)
+        
 
     if audio_url:
         wav, err = download_and_convert(audio_url)
