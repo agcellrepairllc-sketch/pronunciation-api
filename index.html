@@ -997,10 +997,10 @@ async function processRecording() {
 
   try {
     const payload = {
-      audio:     base64Audio,
-      text:      passage,
-      language:  lang,
-      mode:      state.mode,
+      audio_base64:   base64Audio,
+      reference_text: passage,
+      language:       lang,
+      mode:           state.mode,
     };
 
     const res = await fetch(`${RENDER_BASE}/assess`, {
@@ -1107,7 +1107,7 @@ function highlightWords(wordData) {
       (wd.word || '').toLowerCase().replace(/[^a-zA-ZÀ-ÿ]/g,'') === w
     );
     if (!match) return;
-    const score = match.accuracy_score ?? match.score ?? 0;
+    const score = match.accuracy ?? match.accuracy_score ?? match.score ?? 0;
     span.classList.add(score >= 80 ? 'good' : score >= 60 ? 'ok' : 'bad');
     span.title = `${match.word}: ${Math.round(score)}%`;
   });
@@ -1120,7 +1120,7 @@ function buildWordChips(wordData) {
     return;
   }
   wrap.innerHTML = wordData.map(w => {
-    const score = w.accuracy_score ?? w.score ?? 0;
+    const score = w.accuracy ?? w.accuracy_score ?? w.score ?? 0;
     const cls   = score >= 80 ? 'good' : score >= 60 ? 'ok' : 'bad';
     return `<span class="word-chip ${cls}">${w.word} ${Math.round(score)}%</span>`;
   }).join('');
