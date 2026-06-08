@@ -4,6 +4,7 @@ Bridges PaygoGPT + ChatbotBuilder -> Azure Speech Services
 
 Endpoints:
   GET  /              -> health check
+  GET  /health        -> detailed health + ffmpeg check
   POST /assess        -> one-shot mode (CBB + quick test)
   POST /assess-text   -> text-only mode (social media)
   WS   /assess-stream -> continuous mode (full session, real-time)
@@ -64,6 +65,16 @@ def build_silent_wav(duration_ms=200, sample_rate=16000):
         b'data', data_size)
     return header + pcm_data
 
+def detect_audio_suffix(raw):
+    """Detect audio format from magic bytes."""
+    if raw[:4] == b'RIFF':                      return None          # Already WAV
+    if raw[:4] == b'OggS':                      return '.ogg'
+    if raw[:4] == b'fLaC':                      return '.flac'
+    if raw[:3] == b'ID3' or raw[:2] == b'\xff\xfb': return '.mp3'
+    if raw[:4] == b'\x1a\x45\xdf\xa3':         return '.webm'       # WebM/MKV
+    if raw[:4] == b'\x00\x00\x00\x20' or raw[4:8] == b'ftyp': return '.mp4'
+    return '.webm'  # Default fallback
+
 # Azure REST call (one-shot)
 
 def call_azure(audio_bytes, reference_text, language):
@@ -103,14 +114,23 @@ def format_response(azure_result, mode="audio"):
             "details": azure_result.get('details', ''),
             "feedback": "Sorry, assessment failed. Please try again."
         }
-    data  = azure_result.get('data', {})
-    nbest = data.get('NBest', [{}])[0] if data.get('NBest') else {}
-    pa    = nbest.get('PronunciationAssessment', {})
-    pron  = round(pa.get('PronScore',        nbest.get('PronScore',        0)), 1)
-    acc   = round(pa.get('AccuracyScore',     nbest.get('AccuracyScore',    0)), 1)
-    flu   = round(pa.get('FluencyScore',      nbest.get('FluencyScore',     0)), 1)
-    comp  = round(pa.get('CompletenessScore', nbest.get('CompletenessScore',0)), 1)
-    pros  = round(pa.get('ProsodyScore',      nbest.get('ProsodyScore',     0)), 1)
+    try:
+        data       = azure_result.get('data', {}) or {}
+        nbest_list = data.get('NBest', [])
+        nbest      = nbest_list[0] if isinstance(nbest_list, list) and nbest_list else {}
+        pa         = nbest.get('PronunciationAssessment', {}) or {}
+        pron  = round(float(pa.get('PronScore',         0) or 0), 1)
+        acc   = round(float(pa.get('AccuracyScore',     0) or 0), 1)
+        flu   = round(float(pa.get('FluencyScore',      0) or 0), 1)
+        comp  = round(float(pa.get('CompletenessScore', 0) or 0), 1)
+        pros  = round(float(pa.get('ProsodyScore',      0) or 0), 1)
+    except Exception as ex:
+        return {
+            "success": False, "mode": mode,
+            "error": f"Score parsing failed: {str(ex)}",
+            "details": str(azure_result.get('data', '')),
+            "feedback": "Assessment received but scores could not be parsed."
+        }
 
     if   pron >= 90: feedback = f"Excellent! Pronunciation score: {pron}/100."
     elif pron >= 75: feedback = f"Good job! Pronunciation score: {pron}/100."
@@ -118,10 +138,10 @@ def format_response(azure_result, mode="audio"):
     else:            feedback = f"Keep practicing! Pronunciation score: {pron}/100."
 
     words_out, weak = [], []
-    for w in nbest.get('Words', []):
-        w_pa = w.get('PronunciationAssessment', w)
-        ws   = round(w_pa.get('AccuracyScore', w.get('AccuracyScore', 0)), 1)
-        werr = w_pa.get('ErrorType', w.get('ErrorType', 'None'))
+    for w in (nbest.get('Words', []) or []):
+        w_pa = w.get('PronunciationAssessment', {}) or {}
+        ws   = round(float(w_pa.get('AccuracyScore', 0) or 0), 1)
+        werr = w_pa.get('ErrorType', 'None') or 'None'
         words_out.append({"word": w.get('Word',''), "accuracy": ws, "error": werr})
         if ws < 70 or werr not in ('None', ''):
             weak.append(w.get('Word',''))
@@ -162,10 +182,9 @@ def run_continuous_session(ws, language, topic):
     if topic:
         pron_config.enable_content_assessment_with_topic(topic)
 
-    # Push stream - browser sends raw PCM chunks over WebSocket
-    push_stream   = speechsdk.audio.PushAudioInputStream()
-    audio_config  = speechsdk.audio.AudioConfig(stream=push_stream)
-    recognizer    = speechsdk.SpeechRecognizer(
+    push_stream  = speechsdk.audio.PushAudioInputStream()
+    audio_config = speechsdk.audio.AudioConfig(stream=push_stream)
+    recognizer   = speechsdk.SpeechRecognizer(
         speech_config=speech_config,
         audio_config=audio_config
     )
@@ -223,15 +242,12 @@ def run_continuous_session(ws, language, topic):
     recognizer.start_continuous_recognition()
     ws.send(json.dumps({"type": "session_started", "language": language}))
 
-    # Receive audio chunks from browser and push to Azure
-    # Client sends: binary frames (PCM audio) OR text {"action":"stop"}
     while not done.is_set():
         try:
             msg = ws.receive(timeout=30)
             if msg is None:
                 break
             if isinstance(msg, bytes):
-                # Raw PCM audio chunk from browser — push to Azure
                 push_stream.write(msg)
             else:
                 data = json.loads(msg)
@@ -244,7 +260,6 @@ def run_continuous_session(ws, language, topic):
     recognizer.stop_continuous_recognition()
     done.wait(timeout=3)
 
-    # Session summary
     if session_scores:
         avg = round(sum(session_scores) / len(session_scores), 1)
         if   avg >= 90: sfb = f"Outstanding session! Average: {avg}/100."
@@ -269,15 +284,6 @@ def run_continuous_session(ws, language, topic):
 
 @sock.route('/assess-stream')
 def assess_stream(ws):
-    """
-    WebSocket continuous pronunciation session.
-    1. Client sends init JSON: {"language":"fr-CA","topic":"general"}
-    2. Server replies: {"type":"session_started"}
-    3. Client streams raw PCM audio as binary frames
-    4. Server sends {"type":"sentence_result",...} after each sentence
-    5. Client sends {"action":"stop"} to end
-    6. Server sends {"type":"session_summary",...} then {"type":"session_ended"}
-    """
     try:
         init_msg = ws.receive(timeout=10)
         if not init_msg:
@@ -292,7 +298,29 @@ def assess_stream(ws):
         except Exception: pass
 
 
-# One-shot REST routes (CBB unchanged)
+# REST routes
+
+@app.route('/health', methods=['GET'])
+def health():
+    import shutil
+    ffmpeg_path = shutil.which('ffmpeg')
+    ffmpeg_ok   = ffmpeg_path is not None
+    test_result = None
+    if ffmpeg_ok:
+        try:
+            r = subprocess.run(['ffmpeg', '-version'], capture_output=True, timeout=5)
+            test_result = r.stdout.decode()[:100]
+        except Exception as e:
+            test_result = str(e)
+    return jsonify({
+        "status":       "running",
+        "ffmpeg_found": ffmpeg_ok,
+        "ffmpeg_path":  ffmpeg_path,
+        "ffmpeg_info":  test_result,
+        "azure_key":    len(get_azure_key()) > 0,
+        "region":       get_azure_region(),
+    })
+
 
 @app.route('/', methods=['GET'])
 def home():
@@ -305,7 +333,8 @@ def home():
         "endpoints": {
             "one_shot":   "POST /assess",
             "text_mode":  "POST /assess-text",
-            "continuous": "WS   /assess-stream"
+            "continuous": "WS   /assess-stream",
+            "health":     "GET  /health"
         }
     })
 
@@ -328,14 +357,18 @@ def assess():
         try: raw = base64.b64decode(audio_base64)
         except Exception:
             return jsonify({"success": False, "error": "Invalid audio_base64"}), 400
-        suffix = '.webm'
-        if raw[:4] == b'OggS': suffix = '.ogg'
-        elif raw[:4] == b'fLaC': suffix = '.flac'
-        elif raw[:3] == b'ID3' or raw[:2] == b'\xff\xfb': suffix = '.mp3'
-        elif raw[:4] == b'RIFF':
+
+        suffix = detect_audio_suffix(raw)
+        if suffix is None:
+            # Already WAV — send directly
             return jsonify(format_response(call_azure(raw, reference_text, language), mode="audio"))
-        wav, _ = convert_to_wav(raw, suffix)
-        return jsonify(format_response(call_azure(wav if wav else raw, reference_text, language), mode="audio"))
+
+        wav, err = convert_to_wav(raw, suffix)
+        if not wav:
+            # Log the error but try sending raw anyway
+            print(f"ffmpeg conversion failed ({suffix}): {err}")
+            return jsonify(format_response(call_azure(raw, reference_text, language), mode="audio"))
+        return jsonify(format_response(call_azure(wav, reference_text, language), mode="audio"))
 
     if audio_url:
         wav, err = download_and_convert(audio_url)
