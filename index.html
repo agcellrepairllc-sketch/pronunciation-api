@@ -616,6 +616,7 @@ function resetScores() {
 async function logSession(durationMin, scores) {
   if (!state.token || state.profile?.test_mode) return;
   const p = state.profile;
+  const weakWords = (scores.words || []).filter(w => (w.accuracy||0) < 60).map(w => w.word).join(', ');
   await fetch(`${VERCEL_BASE}/api/log-session`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -627,7 +628,7 @@ async function logSession(durationMin, scores) {
       fluency: scores.fluency_score || 0, prosody: scores.prosody_score || 0,
       completeness: scores.completeness_score || 0,
       passage_used: (state.passage?.passage || '').substring(0, 200),
-      weak_words: scores.words || []).filter(w => (w.accuracy||0) < 60).map(w => w.word).join(', '),
+      weak_words: weakWords,
       session_number: state.sessionNumber, is_trial: p.token_type === 'trial',
     })
   });
@@ -681,4 +682,8 @@ function show(id) { el(id)?.classList.remove('hidden'); }
 function hide(id) { el(id)?.classList.add('hidden'); }
 function toast(msg, type = '') {
   const t = el('toast'); t.textContent = msg; t.className = `show ${type}`;
-  clearTimeout(t._timer); t._timer = setTimeout(() => { t.className�
+  clearTimeout(t._timer); t._timer = setTimeout(() => { t.className = ''; }, 3500);
+}
+</script>
+</body>
+</html>
