@@ -128,12 +128,13 @@ def format_response(azure_result, mode="audio"):
         data       = azure_result.get('data', {}) or {}
         nbest_list = data.get('NBest', [])
         nbest      = nbest_list[0] if isinstance(nbest_list, list) and nbest_list else {}
-        pa         = nbest.get('PronunciationAssessment', {}) or {}
-        pron  = round(float(pa.get('PronScore',         0) or 0), 1)
-        acc   = round(float(pa.get('AccuracyScore',     0) or 0), 1)
-        flu   = round(float(pa.get('FluencyScore',      0) or 0), 1)
-        comp  = round(float(pa.get('CompletenessScore', 0) or 0), 1)
-        pros  = round(float(pa.get('ProsodyScore',      0) or 0), 1)
+        # Azure returns scores directly in NBest[0], not nested in PronunciationAssessment
+        pa    = nbest.get('PronunciationAssessment', {}) or {}
+        pron  = round(float(nbest.get('PronScore',         pa.get('PronScore',         0)) or 0), 1)
+        acc   = round(float(nbest.get('AccuracyScore',     pa.get('AccuracyScore',     0)) or 0), 1)
+        flu   = round(float(nbest.get('FluencyScore',      pa.get('FluencyScore',      0)) or 0), 1)
+        comp  = round(float(nbest.get('CompletenessScore', pa.get('CompletenessScore', 0)) or 0), 1)
+        pros  = round(float(nbest.get('ProsodyScore',      pa.get('ProsodyScore',      0)) or 0), 1)
     except Exception as ex:
         return {
             "success": False, "mode": mode,
@@ -149,9 +150,10 @@ def format_response(azure_result, mode="audio"):
 
     words_out, weak = [], []
     for w in (nbest.get('Words', []) or []):
+        # Azure returns word scores directly in word dict, not nested in PronunciationAssessment
         w_pa = w.get('PronunciationAssessment', {}) or {}
-        ws   = round(float(w_pa.get('AccuracyScore', 0) or 0), 1)
-        werr = w_pa.get('ErrorType', 'None') or 'None'
+        ws   = round(float(w.get('AccuracyScore', w_pa.get('AccuracyScore', 0)) or 0), 1)
+        werr = w.get('ErrorType', w_pa.get('ErrorType', 'None')) or 'None'
         words_out.append({"word": w.get('Word',''), "accuracy": ws, "error": werr})
         if ws < 70 or werr not in ('None', ''):
             weak.append(w.get('Word',''))
