@@ -478,40 +478,12 @@ function stopRecording() {
 
 async function processRecording() {
   const durationMin = state.recSeconds / 60;
+  const blob = new Blob(state.audioChunks, { type: state.mediaRecorder.mimeType || 'audio/webm' });
+  el('rec-status').textContent = 'Connexion à Azure…';
   try {
-    const blob = new Blob(state.audioChunks, { type: state.mediaRecorder.mimeType || 'audio/webm' });
-    
-    // Convert to 16kHz mono PCM WAV using Web Audio API
-    // This gives Azure exactly the format it needs
-    const base64Audio = await convertToWavBase64(blob);
-    
-    const res = await fetch(`${RENDER_BASE}/assess`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        audio_base64:   base64Audio,
-        reference_text: state.passage?.passage || '',
-        language:       state.lang,
-        mode:           state.mode,
-      }),
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const scores = await res.json();
-    if (!scores.success) throw new Error(scores.error || 'Assessment failed');
-    state.lastScores = scores;
-    displayScores(scores);
-    state.sessionNumber++;
-    logSession(durationMin, scores).catch(console.warn);
-    if (!state.profile.test_mode) {
-      state.profile.minutes_used_today = (state.profile.minutes_used_today || 0) + durationMin;
-      updateLimitBar();
-    }
-    if (state.profile.token_type === 'trial') {
-      state.trialExpended = true;
-      setTimeout(showTrialEndCard, 2500);
-    }
+    await streamToAzure(blob, durationMin);
   } catch (err) {
-    toast('Erreur lors de l\'analyse: ' + err.message, 'error');
+    toast('Erreur: ' + err.message, 'error');
   } finally {
     state.isProcessing = false;
     el('mic-btn').className = 'mic-btn';
@@ -521,81 +493,72 @@ async function processRecording() {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   WEB AUDIO API — Convert WebM to 16kHz mono PCM WAV
-   Properly resamples using OfflineAudioContext
-═══════════════════════════════════════════════════════════ */
-async function convertToWavBase64(blob) {
-  try {
-    const arrayBuf = await blob.arrayBuffer();
+async function streamToAzure(blob, durationMin) {
+  return new Promise((resolve, reject) => {
+    const wsUrl = RENDER_BASE.replace('https://', 'wss://').replace('http://', 'ws://') + '/assess-stream';
+    const ws    = new WebSocket(wsUrl);
+    const scores = [];
 
-    // Step 1: Decode at native sample rate (don't force 16kHz — browsers ignore it)
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const decoded  = await audioCtx.decodeAudioData(arrayBuf);
-    await audioCtx.close();
-
-    const nativeSampleRate = decoded.sampleRate;
-    const nativeSamples    = decoded.getChannelData(0);
-
-    // Step 2: Resample to 16kHz using OfflineAudioContext
-    const targetRate    = 16000;
-    const targetLen     = Math.round(nativeSamples.length * targetRate / nativeSampleRate);
-    const offlineCtx    = new OfflineAudioContext(1, targetLen, targetRate);
-    const buffer        = offlineCtx.createBuffer(1, nativeSamples.length, nativeSampleRate);
-    buffer.getChannelData(0).set(nativeSamples);
-    const src = offlineCtx.createBufferSource();
-    src.buffer = buffer;
-    src.connect(offlineCtx.destination);
-    src.start(0);
-    const resampled  = await offlineCtx.startRendering();
-    const pcm        = resampled.getChannelData(0);
-    const numSamples = pcm.length;
-
-    // Build WAV file in memory
-    const wavBuf = new ArrayBuffer(44 + numSamples * 2);
-    const view   = new DataView(wavBuf);
-
-    const writeStr = (off, str) => {
-      for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
+    ws.onopen = () => {
+      el('rec-status').textContent = 'Analyse en cours…';
+      ws.send(JSON.stringify({
+        language: state.lang,
+        topic:    state.passage?.topic || 'general',
+        reference_text: state.passage?.passage || ''
+      }));
+      blob.arrayBuffer().then(buf => {
+        const bytes = new Uint8Array(buf);
+        const chunkSize = 4096;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          ws.send(bytes.slice(i, i + chunkSize));
+        }
+        ws.send(JSON.stringify({ action: 'stop' }));
+      });
     };
 
-    writeStr(0,  'RIFF');
-    view.setUint32(4,  36 + numSamples * 2, true);  // file size - 8
-    writeStr(8,  'WAVE');
-    writeStr(12, 'fmt ');
-    view.setUint32(16, 16,    true);  // PCM chunk size
-    view.setUint16(20, 1,     true);  // PCM format
-    view.setUint16(22, 1,     true);  // mono
-    view.setUint32(24, 16000, true);  // sample rate
-    view.setUint32(28, 32000, true);  // byte rate (16000 * 1 * 2)
-    view.setUint16(32, 2,     true);  // block align (1 * 2)
-    view.setUint16(34, 16,    true);  // bits per sample
-    writeStr(36, 'data');
-    view.setUint32(40, numSamples * 2, true);
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'sentence_result') {
+          scores.push(msg);
+          el('rec-status').textContent = 'Score partiel: ' + Math.round(msg.pronunciation_score || 0) + '/100 — ' + (msg.text || '');
+        } else if (msg.type === 'session_summary') {
+          const avg = msg.average_score || 0;
+          const finalScores = {
+            success: true, mode: 'audio',
+            pronunciation_score:  avg,
+            accuracy_score:       scores.length ? scores.reduce((s,r) => s+(r.accuracy_score||0),0)/scores.length : 0,
+            fluency_score:        scores.length ? scores.reduce((s,r) => s+(r.fluency_score||0),0)/scores.length : 0,
+            completeness_score:   scores.length ? scores.reduce((s,r) => s+(r.completeness_score||0),0)/scores.length : 0,
+            prosody_score:        0,
+            feedback:             msg.feedback || '',
+            words:                scores.flatMap(r => r.words || []),
+            recognized_text:      scores.map(r => r.text || '').join(' ')
+          };
+          state.lastScores = finalScores;
+          displayScores(finalScores);
+          state.sessionNumber++;
+          logSession(durationMin, finalScores).catch(console.warn);
+          if (!state.profile.test_mode) {
+            state.profile.minutes_used_today = (state.profile.minutes_used_today || 0) + durationMin;
+            updateLimitBar();
+          }
+          if (state.profile.token_type === 'trial') {
+            state.trialExpended = true;
+            setTimeout(showTrialEndCard, 2500);
+          }
+        } else if (msg.type === 'session_ended') {
+          ws.close(); resolve();
+        } else if (msg.type === 'error') {
+          reject(new Error(msg.message || 'WebSocket error'));
+        }
+      } catch (e) { console.warn('WS parse error:', e); }
+    };
 
-    // Convert float32 to int16 PCM
-    const int16 = new Int16Array(wavBuf, 44);
-    for (let i = 0; i < numSamples; i++) {
-      int16[i] = Math.max(-32768, Math.min(32767, Math.round(pcm[i] * 32767)));
-    }
-
-    // Encode to base64 in chunks
-    const bytes  = new Uint8Array(wavBuf);
-    let binary   = '';
-    for (let i = 0; i < bytes.length; i += 8192)
-      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
-    return btoa(binary);
-
-  } catch (err) {
-    // Fallback: send raw WebM if Web Audio fails
-    console.warn('Web Audio conversion failed, using raw WebM:', err.message);
-    const arrayBuf = await blob.arrayBuffer();
-    const bytes    = new Uint8Array(arrayBuf);
-    let binary     = '';
-    for (let i = 0; i < bytes.length; i += 8192)
-      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
-    return btoa(binary);
-  }
+    ws.onerror = () => reject(new Error('Connexion WebSocket échouée'));
+    ws.onclose = ()  => resolve();
+    setTimeout(() => { ws.close(); resolve(); }, 30000);
+  });
 }
 
 function displayScores(scores) {
@@ -619,7 +582,7 @@ function setScore(key, val) {
   v.className   = `score-val ${val >= 80 ? 'great' : val >= 60 ? 'ok' : 'poor'}`;
 }
 
-function scoreColor(v) { return v >= 80 ? 'var(--green(' : v >= 60 ? 'var(--gold)' : 'var(--red)'; }
+function scoreColor(v) { return v >= 80 ? 'var(--green)' : v >= 60 ? 'var(--gold)' : 'var(--red)'; }
 
 function scoreFeedback(v) {
   if (v >= 90) return 'Excellent ! Prononciation quasi native.';
