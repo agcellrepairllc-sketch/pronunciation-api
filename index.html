@@ -453,11 +453,13 @@ async function startRecording() {
     el('mic-btn').className = 'mic-btn recording';
     el('mic-btn').textContent = '⏹️';
     el('rec-timer').classList.add('visible');
-    el('rec-status').textContent = 'Enregistrement… Cliquez pour arrêter.';
+    el('rec-status').textContent = 'Enregistrement… (max 20s) Cliquez pour arrêter.';
     state.recTimerInterval = setInterval(() => {
       state.recSeconds++;
       const m = Math.floor(state.recSeconds / 60), s = state.recSeconds % 60;
       el('rec-timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      // Auto-stop at 20s — Azure REST API limit is 30s
+      if (state.recSeconds >= MAX_REC_SECONDS) stopRecording();
     }, 1000);
   } catch (err) {
     toast('Microphone non accessible.', 'error');
@@ -476,14 +478,45 @@ function stopRecording() {
   }
 }
 
+// Azure REST API limit: 30 seconds max for pronunciation assessment
+const MAX_REC_SECONDS = 20;
+
 async function processRecording() {
   const durationMin = state.recSeconds / 60;
-  const blob = new Blob(state.audioChunks, { type: state.mediaRecorder.mimeType || 'audio/webm' });
-  el('rec-status').textContent = 'Connexion à Azure…';
   try {
-    await streamToAzure(blob, durationMin);
+    const blob = new Blob(state.audioChunks, { type: state.mediaRecorder.mimeType || 'audio/webm' });
+    el('rec-status').textContent = 'Analyse en cours…';
+
+    // Convert to 16kHz mono WAV using OfflineAudioContext
+    const base64Audio = await convertToWavBase64(blob);
+
+    const res = await fetch(`${RENDER_BASE}/assess`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audio_base64:   base64Audio,
+        reference_text: state.passage?.passage || '',
+        language:       state.lang,
+        mode:           state.mode,
+      }),
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const scores = await res.json();
+    if (!scores.success) throw new Error(scores.error || 'Assessment failed');
+    state.lastScores = scores;
+    displayScores(scores);
+    state.sessionNumber++;
+    logSession(durationMin, scores).catch(console.warn);
+    if (!state.profile.test_mode) {
+      state.profile.minutes_used_today = (state.profile.minutes_used_today || 0) + durationMin;
+      updateLimitBar();
+    }
+    if (state.profile.token_type === 'trial') {
+      state.trialExpended = true;
+      setTimeout(showTrialEndCard, 2500);
+    }
   } catch (err) {
-    toast('Erreur: ' + err.message, 'error');
+    toast('Erreur lors de l\'analyse: ' + err.message, 'error');
   } finally {
     state.isProcessing = false;
     el('mic-btn').className = 'mic-btn';
@@ -493,72 +526,48 @@ async function processRecording() {
   }
 }
 
-async function streamToAzure(blob, durationMin) {
-  return new Promise((resolve, reject) => {
-    const wsUrl = RENDER_BASE.replace('https://', 'wss://').replace('http://', 'ws://') + '/assess-stream';
-    const ws    = new WebSocket(wsUrl);
-    const scores = [];
+/* Convert WebM to 16kHz mono PCM WAV using OfflineAudioContext */
+async function convertToWavBase64(blob) {
+  try {
+    const arrayBuf = await blob.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const decoded  = await audioCtx.decodeAudioData(arrayBuf);
+    await audioCtx.close();
 
-    ws.onopen = () => {
-      el('rec-status').textContent = 'Analyse en cours…';
-      ws.send(JSON.stringify({
-        language: state.lang,
-        topic:    state.passage?.topic || 'general',
-        reference_text: state.passage?.passage || ''
-      }));
-      blob.arrayBuffer().then(buf => {
-        const bytes = new Uint8Array(buf);
-        const chunkSize = 4096;
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          ws.send(bytes.slice(i, i + chunkSize));
-        }
-        ws.send(JSON.stringify({ action: 'stop' }));
-      });
-    };
+    const targetRate = 16000;
+    const targetLen  = Math.round(decoded.length * targetRate / decoded.sampleRate);
+    const offline    = new OfflineAudioContext(1, targetLen, targetRate);
+    const buf        = offline.createBuffer(1, decoded.length, decoded.sampleRate);
+    buf.getChannelData(0).set(decoded.getChannelData(0));
+    const src = offline.createBufferSource();
+    src.buffer = buf; src.connect(offline.destination); src.start(0);
+    const resampled = await offline.startRendering();
+    const pcm       = resampled.getChannelData(0);
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'sentence_result') {
-          scores.push(msg);
-          el('rec-status').textContent = 'Score partiel: ' + Math.round(msg.pronunciation_score || 0) + '/100 — ' + (msg.text || '');
-        } else if (msg.type === 'session_summary') {
-          const avg = msg.average_score || 0;
-          const finalScores = {
-            success: true, mode: 'audio',
-            pronunciation_score:  avg,
-            accuracy_score:       scores.length ? scores.reduce((s,r) => s+(r.accuracy_score||0),0)/scores.length : 0,
-            fluency_score:        scores.length ? scores.reduce((s,r) => s+(r.fluency_score||0),0)/scores.length : 0,
-            completeness_score:   scores.length ? scores.reduce((s,r) => s+(r.completeness_score||0),0)/scores.length : 0,
-            prosody_score:        0,
-            feedback:             msg.feedback || '',
-            words:                scores.flatMap(r => r.words || []),
-            recognized_text:      scores.map(r => r.text || '').join(' ')
-          };
-          state.lastScores = finalScores;
-          displayScores(finalScores);
-          state.sessionNumber++;
-          logSession(durationMin, finalScores).catch(console.warn);
-          if (!state.profile.test_mode) {
-            state.profile.minutes_used_today = (state.profile.minutes_used_today || 0) + durationMin;
-            updateLimitBar();
-          }
-          if (state.profile.token_type === 'trial') {
-            state.trialExpended = true;
-            setTimeout(showTrialEndCard, 2500);
-          }
-        } else if (msg.type === 'session_ended') {
-          ws.close(); resolve();
-        } else if (msg.type === 'error') {
-          reject(new Error(msg.message || 'WebSocket error'));
-        }
-      } catch (e) { console.warn('WS parse error:', e); }
-    };
+    const wavBuf = new ArrayBuffer(44 + pcm.length * 2);
+    const view   = new DataView(wavBuf);
+    const ws = (o,s) => { for(let i=0;i<s.length;i++) view.setUint8(o+i, s.charCodeAt(i)); };
+    ws(0,'RIFF'); view.setUint32(4, 36+pcm.length*2, true);
+    ws(8,'WAVE'); ws(12,'fmt ');
+    view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,1,true);
+    view.setUint32(24,16000,true); view.setUint32(28,32000,true);
+    view.setUint16(32,2,true); view.setUint16(34,16,true);
+    ws(36,'data'); view.setUint32(40, pcm.length*2, true);
+    const int16 = new Int16Array(wavBuf, 44);
+    for(let i=0;i<pcm.length;i++) int16[i] = Math.max(-32768, Math.min(32767, Math.round(pcm[i]*32767)));
 
-    ws.onerror = () => reject(new Error('Connexion WebSocket échouée'));
-    ws.onclose = ()  => resolve();
-    setTimeout(() => { ws.close(); resolve(); }, 30000);
-  });
+    const bytes = new Uint8Array(wavBuf);
+    let bin = '';
+    for(let i=0;i<bytes.length;i+=8192) bin += String.fromCharCode(...bytes.subarray(i,i+8192));
+    return btoa(bin);
+  } catch(err) {
+    console.warn('Web Audio failed, sending raw:', err.message);
+    const ab = await blob.arrayBuffer();
+    const b  = new Uint8Array(ab);
+    let bin  = '';
+    for(let i=0;i<b.length;i+=8192) bin += String.fromCharCode(...b.subarray(i,i+8192));
+    return btoa(bin);
+  }
 }
 
 function displayScores(scores) {
@@ -588,7 +597,7 @@ function scoreFeedback(v) {
   if (v >= 90) return 'Excellent ! Prononciation quasi native.';
   if (v >= 80) return 'Très bien ! Quelques petits ajustements.';
   if (v >= 65) return 'Bien. Continuez à pratiquer les mots difficiles.';
-  if (v >= 50) return 'En progrès. Portez attention aux sons du français.';
+  if (v >= 50) return 'En progrès. Porter attention aux sons du français.';
   return 'À améliorer. Écoutez les passages à voix haute avant d\'enregistrer.';
 }
 
@@ -627,7 +636,7 @@ async function logSession(durationMin, scores) {
       fluency: scores.fluency_score || 0, prosody: scores.prosody_score || 0,
       completeness: scores.completeness_score || 0,
       passage_used: (state.passage?.passage || '').substring(0, 200),
-      weak_words: (scores.words || []).filter(w => (w.accuracy||0) < 60).map(w => w.word).join(', '),
+      weak_words: scores.words || []).filter(w => (w.accuracy||0) < 60).map(w => w.word).join(', '),
       session_number: state.sessionNumber, is_trial: p.token_type === 'trial',
     })
   });
