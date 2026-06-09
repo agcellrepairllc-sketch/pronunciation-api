@@ -523,16 +523,33 @@ async function processRecording() {
 
 /* ═══════════════════════════════════════════════════════════
    WEB AUDIO API — Convert WebM to 16kHz mono PCM WAV
-   Bypasses ffmpeg entirely — browser does the conversion
+   Properly resamples using OfflineAudioContext
 ═══════════════════════════════════════════════════════════ */
 async function convertToWavBase64(blob) {
   try {
-    const arrayBuf  = await blob.arrayBuffer();
-    const audioCtx  = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-    const decoded   = await audioCtx.decodeAudioData(arrayBuf);
-    const pcm       = decoded.getChannelData(0);  // mono channel
-    const numSamples = pcm.length;
+    const arrayBuf = await blob.arrayBuffer();
+
+    // Step 1: Decode at native sample rate (don't force 16kHz — browsers ignore it)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const decoded  = await audioCtx.decodeAudioData(arrayBuf);
     await audioCtx.close();
+
+    const nativeSampleRate = decoded.sampleRate;
+    const nativeSamples    = decoded.getChannelData(0);
+
+    // Step 2: Resample to 16kHz using OfflineAudioContext
+    const targetRate    = 16000;
+    const targetLen     = Math.round(nativeSamples.length * targetRate / nativeSampleRate);
+    const offlineCtx    = new OfflineAudioContext(1, targetLen, targetRate);
+    const buffer        = offlineCtx.createBuffer(1, nativeSamples.length, nativeSampleRate);
+    buffer.getChannelData(0).set(nativeSamples);
+    const src = offlineCtx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(offlineCtx.destination);
+    src.start(0);
+    const resampled  = await offlineCtx.startRendering();
+    const pcm        = resampled.getChannelData(0);
+    const numSamples = pcm.length;
 
     // Build WAV file in memory
     const wavBuf = new ArrayBuffer(44 + numSamples * 2);
@@ -602,7 +619,7 @@ function setScore(key, val) {
   v.className   = `score-val ${val >= 80 ? 'great' : val >= 60 ? 'ok' : 'poor'}`;
 }
 
-function scoreColor(v) { return v >= 80 ? 'var(--green)' : v >= 60 ? 'var(--gold)' : 'var(--red)'; }
+function scoreColor(v) { return v >= 80 ? 'var(--green(' : v >= 60 ? 'var(--gold)' : 'var(--red)'; }
 
 function scoreFeedback(v) {
   if (v >= 90) return 'Excellent ! Prononciation quasi native.';
