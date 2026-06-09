@@ -92,9 +92,19 @@ def call_azure(audio_bytes, reference_text, language):
     url = (f"https://{azure_region}.stt.speech.microsoft.com"
            f"/speech/recognition/conversation/cognitiveservices/v1"
            f"?language={language}&format=detailed&usePipelineVersion=0")
+    # Detect audio format and set correct Content-Type for Azure
+    if audio_bytes[:4] == b'RIFF':
+        content_type = 'audio/wav; codecs=audio/pcm; samplerate=16000'
+    elif audio_bytes[:4] == b'\x1a\x45\xdf\xa3':
+        content_type = 'audio/webm; codecs=opus'
+    elif audio_bytes[:4] == b'OggS':
+        content_type = 'audio/ogg; codecs=opus'
+    else:
+        content_type = 'audio/webm; codecs=opus'
+    print(f'[DEBUG] Audio format detected: {content_type[:30]}, size: {len(audio_bytes)} bytes')
     headers = {
         "Ocp-Apim-Subscription-Key": azure_key,
-        "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
+        "Content-Type": content_type,
         "Pronunciation-Assessment": pron_b64,
         "Accept": "application/json"
     }
@@ -358,17 +368,10 @@ def assess():
         except Exception:
             return jsonify({"success": False, "error": "Invalid audio_base64"}), 400
 
-        suffix = detect_audio_suffix(raw)
-        if suffix is None:
-            # Already WAV — send directly
-            return jsonify(format_response(call_azure(raw, reference_text, language), mode="audio"))
-
-        wav, err = convert_to_wav(raw, suffix)
-        if not wav:
-            # Log the error but try sending raw anyway
-            print(f"ffmpeg conversion failed ({suffix}): {err}")
-            return jsonify(format_response(call_azure(raw, reference_text, language), mode="audio"))
-        return jsonify(format_response(call_azure(wav, reference_text, language), mode="audio"))
+        # Send raw audio with correct Content-Type — Azure supports WebM/Opus natively
+        # No ffmpeg conversion needed
+        print(f"[DEBUG] audio received: {len(raw)} bytes, magic={raw[:4].hex()}")
+        return jsonify(format_response(call_azure(raw, reference_text, language), mode="audio"))
 
     if audio_url:
         wav, err = download_and_convert(audio_url)
