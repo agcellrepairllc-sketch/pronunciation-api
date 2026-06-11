@@ -417,11 +417,7 @@ def encrypt_pdf():
             pdf_b64  = data.get('pdf_base64', '')
             if not pdf_b64:
                 return jsonify({"success": False, "error": "No pdf_base64 provided"}), 400
-            # Fix base64 padding
-            padding = 4 - len(pdf_b64) % 4
-            if padding != 4:
-                pdf_b64 += '=' * padding
-            pdf_bytes = base64.b64decode(pdf_b64)
+            pdf_bytes = base64.b64decode(pdf_b64 + '==', validate=False)
 
         if not password:
             return jsonify({"success": False, "error": "No password provided"}), 400
