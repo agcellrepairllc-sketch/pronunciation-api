@@ -458,7 +458,7 @@ def encrypt_pdf():
 
         try:
             # Open and encrypt with pikepdf
-            with pikepdf.open(in_path) as pdf:
+            with pikepdf.open(in_path, suppress_warnings=True, attempt_recovery=True) as pdf:
                 pdf.save(
                     out_path,
                     encryption=pikepdf.Encryption(
