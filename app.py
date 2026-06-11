@@ -398,8 +398,7 @@ def languages():
 @app.route('/encrypt-pdf', methods=['POST'])
 def encrypt_pdf():
     try:
-        import pikepdf
-        import tempfile, os
+        import pikepdf, io
 
         password = None
         pdf_bytes = None
@@ -422,14 +421,11 @@ def encrypt_pdf():
         if not password:
             return jsonify({"success": False, "error": "No password provided"}), 400
 
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f_in:
-            f_in.write(pdf_bytes)
-            in_path = f_in.name
-
-        out_path = in_path.replace('.pdf', '_encrypted.pdf')
+        import tempfile, os
+        out_path = tempfile.mktemp(suffix='.pdf')
 
         try:
-            with pikepdf.open(in_path, suppress_warnings=True, attempt_recovery=True) as pdf:
+            with pikepdf.open(io.BytesIO(pdf_bytes), suppress_warnings=True) as pdf:
                 pdf.save(
                     out_path,
                     encryption=pikepdf.Encryption(
@@ -459,8 +455,6 @@ def encrypt_pdf():
             )
 
         finally:
-            try: os.unlink(in_path)
-            except: pass
             try: os.unlink(out_path)
             except: pass
 
