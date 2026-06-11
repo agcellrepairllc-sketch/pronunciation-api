@@ -425,7 +425,7 @@ def encrypt_pdf():
         out_path = tempfile.mktemp(suffix='.pdf')
 
         try:
-            with pikepdf.open(io.BytesIO(pdf_bytes), suppress_warnings=True) as pdf:
+            with pikepdf.open(io.BytesIO(pdf_bytes), suppress_warnings=True, attempt_recovery=True) as pdf:
                 pdf.save(
                     out_path,
                     encryption=pikepdf.Encryption(
