@@ -414,42 +414,33 @@ def languages():
 
 @app.route('/encrypt-pdf', methods=['POST'])
 def encrypt_pdf():
-    """
-    Encrypt a PDF with a user password using pikepdf.
-    Accepts: multipart/form-data with 'pdf' file and 'password' field
-    OR JSON with 'pdf_base64' and 'password' fields
-    Returns: encrypted PDF as binary
-    """
     try:
-        import pikepdf
-        import tempfile, os
+        import pikepdf, tempfile, os, base64
 
         password = None
         pdf_bytes = None
 
-        # Handle multipart form data
         if request.content_type and 'multipart/form-data' in request.content_type:
             if 'pdf' not in request.files:
                 return jsonify({"success": False, "error": "No PDF file provided"}), 400
             password = request.form.get('password', '')
             pdf_bytes = request.files['pdf'].read()
-
-        # Handle JSON with base64
         else:
             data = request.get_json()
             if not data:
                 return jsonify({"success": False, "error": "No data provided"}), 400
             password = data.get('password', '')
-            pdf_b64  = data.get('pdf_base64', '')
+            pdf_b64 = data.get('pdf_base64', '')
             if not pdf_b64:
                 return jsonify({"success": False, "error": "No pdf_base64 provided"}), 400
-            import base64
+            padding = 4 - len(pdf_b64) % 4
+            if padding != 4:
+                pdf_b64 += '=' * padding
             pdf_bytes = base64.b64decode(pdf_b64)
 
         if not password:
             return jsonify({"success": False, "error": "No password provided"}), 400
 
-        # Write input PDF to temp file
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f_in:
             f_in.write(pdf_bytes)
             in_path = f_in.name
@@ -457,14 +448,13 @@ def encrypt_pdf():
         out_path = in_path.replace('.pdf', '_encrypted.pdf')
 
         try:
-            # Open and encrypt with pikepdf
             with pikepdf.open(in_path, suppress_warnings=True, attempt_recovery=True) as pdf:
                 pdf.save(
                     out_path,
                     encryption=pikepdf.Encryption(
                         user=password,
                         owner=password + '-OWNER',
-                        R=4,  # AES-128
+                        R=4,
                         allow=pikepdf.Permissions(
                             print_lowres=False,
                             print_highres=False,
@@ -497,8 +487,3 @@ def encrypt_pdf():
         return jsonify({"success": False, "error": "pikepdf not installed"}), 500
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
