@@ -9,6 +9,7 @@ Endpoints:
   POST /assess-text   -> text-only mode (social media)
   WS   /assess-stream -> continuous mode (full session, real-time)
   GET  /languages     -> supported locales
+  POST /encrypt-pdf   -> PDF encryption with pikepdf
 """
 
 from flask import Flask, request, jsonify
@@ -66,16 +67,13 @@ def build_silent_wav(duration_ms=200, sample_rate=16000):
     return header + pcm_data
 
 def detect_audio_suffix(raw):
-    """Detect audio format from magic bytes."""
-    if raw[:4] == b'RIFF':                      return None          # Already WAV
+    if raw[:4] == b'RIFF':                      return None
     if raw[:4] == b'OggS':                      return '.ogg'
     if raw[:4] == b'fLaC':                      return '.flac'
     if raw[:3] == b'ID3' or raw[:2] == b'\xff\xfb': return '.mp3'
-    if raw[:4] == b'\x1a\x45\xdf\xa3':         return '.webm'       # WebM/MKV
+    if raw[:4] == b'\x1a\x45\xdf\xa3':         return '.webm'
     if raw[:4] == b'\x00\x00\x00\x20' or raw[4:8] == b'ftyp': return '.mp4'
-    return '.webm'  # Default fallback
-
-# Azure REST call (one-shot)
+    return '.webm'
 
 def call_azure(audio_bytes, reference_text, language):
     azure_key    = get_azure_key()
@@ -92,7 +90,6 @@ def call_azure(audio_bytes, reference_text, language):
     url = (f"https://{azure_region}.stt.speech.microsoft.com"
            f"/speech/recognition/conversation/cognitiveservices/v1"
            f"?language={language}&format=detailed&usePipelineVersion=0")
-    # Detect audio format and set correct Content-Type for Azure
     if audio_bytes[:4] == b'RIFF':
         content_type = 'audio/wav; codecs=audio/pcm; samplerate=16000'
     elif audio_bytes[:4] == b'\x1a\x45\xdf\xa3':
@@ -101,7 +98,6 @@ def call_azure(audio_bytes, reference_text, language):
         content_type = 'audio/ogg; codecs=opus'
     else:
         content_type = 'audio/webm; codecs=opus'
-    print(f'[DEBUG] Audio format detected: {content_type[:30]}, size: {len(audio_bytes)} bytes')
     headers = {
         "Ocp-Apim-Subscription-Key": azure_key,
         "Content-Type": content_type,
@@ -128,7 +124,6 @@ def format_response(azure_result, mode="audio"):
         data       = azure_result.get('data', {}) or {}
         nbest_list = data.get('NBest', [])
         nbest      = nbest_list[0] if isinstance(nbest_list, list) and nbest_list else {}
-        # Azure returns scores directly in NBest[0], not nested in PronunciationAssessment
         pa    = nbest.get('PronunciationAssessment', {}) or {}
         pron  = round(float(nbest.get('PronScore',         pa.get('PronScore',         0)) or 0), 1)
         acc   = round(float(nbest.get('AccuracyScore',     pa.get('AccuracyScore',     0)) or 0), 1)
@@ -150,7 +145,6 @@ def format_response(azure_result, mode="audio"):
 
     words_out, weak = [], []
     for w in (nbest.get('Words', []) or []):
-        # Azure returns word scores directly in word dict, not nested in PronunciationAssessment
         w_pa = w.get('PronunciationAssessment', {}) or {}
         ws   = round(float(w.get('AccuracyScore', w_pa.get('AccuracyScore', 0)) or 0), 1)
         werr = w.get('ErrorType', w_pa.get('ErrorType', 'None')) or 'None'
@@ -168,8 +162,6 @@ def format_response(azure_result, mode="audio"):
         "words": words_out,
         "recognized_text": nbest.get('Display', nbest.get('Lexical', ''))
     }
-
-# Continuous assessment WebSocket
 
 def run_continuous_session(ws, language, topic):
     try:
@@ -212,7 +204,6 @@ def run_continuous_session(ws, language, topic):
             acc  = round(pa.accuracy_score         or 0, 1)
             flu  = round(pa.fluency_score          or 0, 1)
             comp = round(pa.completeness_score     or 0, 1)
-
             words_out = []
             try:
                 detail = json.loads(evt.result.properties.get(
@@ -226,7 +217,6 @@ def run_continuous_session(ws, language, topic):
                     })
             except Exception:
                 pass
-
             session_scores.append(pron)
             try:
                 ws.send(json.dumps({
@@ -310,8 +300,6 @@ def assess_stream(ws):
         except Exception: pass
 
 
-# REST routes
-
 @app.route('/health', methods=['GET'])
 def health():
     import shutil
@@ -346,7 +334,8 @@ def home():
             "one_shot":   "POST /assess",
             "text_mode":  "POST /assess-text",
             "continuous": "WS   /assess-stream",
-            "health":     "GET  /health"
+            "health":     "GET  /health",
+            "encrypt":    "POST /encrypt-pdf"
         }
     })
 
@@ -369,10 +358,6 @@ def assess():
         try: raw = base64.b64decode(audio_base64)
         except Exception:
             return jsonify({"success": False, "error": "Invalid audio_base64"}), 400
-
-        # Send raw audio with correct Content-Type — Azure supports WebM/Opus natively
-        # No ffmpeg conversion needed
-        print(f"[DEBUG] audio received: {len(raw)} bytes, magic={raw[:4].hex()}")
         return jsonify(format_response(call_azure(raw, reference_text, language), mode="audio"))
 
     if audio_url:
@@ -408,14 +393,13 @@ def languages():
         {"code": "es-MX", "name": "Spanish (Mexico)"},
         {"code": "es-ES", "name": "Spanish (Spain)"},
     ])
-# ─────────────────────────────────────────────
-# PDF ENCRYPTION ENDPOINT — add to app.py
-# ─────────────────────────────────────────────
+
 
 @app.route('/encrypt-pdf', methods=['POST'])
 def encrypt_pdf():
     try:
-        import pikepdf, tempfile, os, base64
+        import pikepdf
+        import tempfile, os
 
         password = None
         pdf_bytes = None
@@ -430,9 +414,10 @@ def encrypt_pdf():
             if not data:
                 return jsonify({"success": False, "error": "No data provided"}), 400
             password = data.get('password', '')
-            pdf_b64 = data.get('pdf_base64', '')
+            pdf_b64  = data.get('pdf_base64', '')
             if not pdf_b64:
                 return jsonify({"success": False, "error": "No pdf_base64 provided"}), 400
+            # Fix base64 padding
             padding = 4 - len(pdf_b64) % 4
             if padding != 4:
                 pdf_b64 += '=' * padding
@@ -487,3 +472,8 @@ def encrypt_pdf():
         return jsonify({"success": False, "error": "pikepdf not installed"}), 500
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
