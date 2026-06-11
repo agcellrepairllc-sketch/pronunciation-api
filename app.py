@@ -408,6 +408,95 @@ def languages():
         {"code": "es-MX", "name": "Spanish (Mexico)"},
         {"code": "es-ES", "name": "Spanish (Spain)"},
     ])
+# ─────────────────────────────────────────────
+# PDF ENCRYPTION ENDPOINT — add to app.py
+# ─────────────────────────────────────────────
+
+@app.route('/encrypt-pdf', methods=['POST'])
+def encrypt_pdf():
+    """
+    Encrypt a PDF with a user password using pikepdf.
+    Accepts: multipart/form-data with 'pdf' file and 'password' field
+    OR JSON with 'pdf_base64' and 'password' fields
+    Returns: encrypted PDF as binary
+    """
+    try:
+        import pikepdf
+        import tempfile, os
+
+        password = None
+        pdf_bytes = None
+
+        # Handle multipart form data
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            if 'pdf' not in request.files:
+                return jsonify({"success": False, "error": "No PDF file provided"}), 400
+            password = request.form.get('password', '')
+            pdf_bytes = request.files['pdf'].read()
+
+        # Handle JSON with base64
+        else:
+            data = request.get_json()
+            if not data:
+                return jsonify({"success": False, "error": "No data provided"}), 400
+            password = data.get('password', '')
+            pdf_b64  = data.get('pdf_base64', '')
+            if not pdf_b64:
+                return jsonify({"success": False, "error": "No pdf_base64 provided"}), 400
+            import base64
+            pdf_bytes = base64.b64decode(pdf_b64)
+
+        if not password:
+            return jsonify({"success": False, "error": "No password provided"}), 400
+
+        # Write input PDF to temp file
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f_in:
+            f_in.write(pdf_bytes)
+            in_path = f_in.name
+
+        out_path = in_path.replace('.pdf', '_encrypted.pdf')
+
+        try:
+            # Open and encrypt with pikepdf
+            with pikepdf.open(in_path) as pdf:
+                pdf.save(
+                    out_path,
+                    encryption=pikepdf.Encryption(
+                        user=password,
+                        owner=password + '-OWNER',
+                        R=4,  # AES-128
+                        allow=pikepdf.Permissions(
+                            print_lowres=False,
+                            print_highres=False,
+                            extract=False,
+                            modify_annotation=False,
+                            modify_form=False,
+                            modify_other=False,
+                            modify_assembly=False,
+                        )
+                    )
+                )
+
+            with open(out_path, 'rb') as f:
+                encrypted_bytes = f.read()
+
+            from flask import Response
+            return Response(
+                encrypted_bytes,
+                mimetype='application/pdf',
+                headers={'Content-Disposition': 'attachment; filename=encrypted.pdf'}
+            )
+
+        finally:
+            try: os.unlink(in_path)
+            except: pass
+            try: os.unlink(out_path)
+            except: pass
+
+    except ImportError:
+        return jsonify({"success": False, "error": "pikepdf not installed"}), 500
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 if __name__ == '__main__':
